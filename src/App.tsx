@@ -4,6 +4,8 @@ import { DisplayModeWarning } from "./components/DisplayModeWarning";
 import { PlayerSearch } from "./components/PlayerSearch";
 import { MatchHistory } from "./components/MatchHistory";
 import { PlayerStats } from "./components/PlayerStats";
+import { RankDisplay } from "./components/RankDisplay";
+import { InGameIndicator } from "./components/InGameIndicator";
 import "./App.css";
 
 interface PlayerInfo {
@@ -14,17 +16,31 @@ interface PlayerInfo {
 }
 
 function isTauri(): boolean {
-  try {
-    return !!(window as any).__TAURI__;
-  } catch {
-    return false;
+  try { return !!(window as any).__TAURI__; }
+  catch { return false; }
+}
+
+const PROXY_URL = "http://raspberrypi.local:1421";
+
+async function tauriInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
+  if (isTauri()) {
+    const { invoke } = await import("@tauri-apps/api/core");
+    return await invoke<T>(cmd, args);
   }
+  const res = await fetch(`${PROXY_URL}/api/${cmd.replace(/_/g, "-")}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(args || {}),
+  });
+  return res.json();
 }
 
 function App() {
   const [player, setPlayer] = useState<PlayerInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [inTauri, setInTauri] = useState(false);
+  const [refreshMsg, setRefreshMsg] = useState<string | null>(null);
+  const [refreshLoading, setRefreshLoading] = useState(false);
 
   useEffect(() => {
     setInTauri(isTauri());
@@ -60,6 +76,21 @@ function App() {
     setError(null);
   };
 
+  const handleRefreshMatches = async () => {
+    setRefreshLoading(true);
+    setRefreshMsg(null);
+    try {
+      const result = await tauriInvoke<any>("refresh_matches", { count: 20 });
+      setRefreshMsg(
+        `Fetched ${result.fetched} IDs, ${result.new_matches} new, ${result.errors} errors`
+      );
+    } catch (err) {
+      setRefreshMsg(`Error: ${err}`);
+    } finally {
+      setRefreshLoading(false);
+    }
+  };
+
   return (
     <div className="app-container">
       <DisplayModeWarning />
@@ -90,7 +121,30 @@ function App() {
           <div className="hex-dashboard">
             <h2>{player.game_name}#{player.tag_line}</h2>
             <p>Summoner Level {player.summoner_level}</p>
+            <InGameIndicator />
+            <RankDisplay />
             <PlayerStats />
+            <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12 }}>
+              <button
+                onClick={handleRefreshMatches}
+                disabled={refreshLoading}
+                style={{
+                  background: "#c8a84e",
+                  border: "none",
+                  color: "#000",
+                  padding: "4px 12px",
+                  borderRadius: 4,
+                  fontWeight: 600,
+                  cursor: refreshLoading ? "wait" : "pointer",
+                  fontSize: 12,
+                }}
+              >
+                {refreshLoading ? "Fetching..." : "Refresh Matches"}
+              </button>
+              {refreshMsg && (
+                <span style={{ color: "#aaa", fontSize: 11 }}>{refreshMsg}</span>
+              )}
+            </div>
             <MatchHistory />
           </div>
         )}

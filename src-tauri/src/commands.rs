@@ -10,6 +10,7 @@ pub struct PlayerInfo {
     pub game_name: String,
     pub tag_line: String,
     pub summoner_level: i64,
+    pub summoner_id: String,
 }
 
 #[derive(Serialize)]
@@ -20,6 +21,32 @@ pub struct MatchSummary {
     pub game_version: Option<String>,
 }
 
+#[derive(Serialize)]
+pub struct RankInfo {
+    pub tier: String,
+    pub rank: String,
+    pub league_points: i64,
+    pub wins: i64,
+    pub losses: i64,
+    pub queue_type: String,
+}
+
+#[derive(Serialize)]
+pub struct ActiveGameStatus {
+    pub in_game: bool,
+    pub game_id: Option<i64>,
+    pub game_start_time: Option<i64>,
+}
+
+#[derive(Serialize)]
+pub struct RefreshResult {
+    pub fetched: usize,
+    pub new_matches: usize,
+    pub errors: usize,
+}
+
+/// ── ACCOUNT-V1 + TFT-SUMMONER-V1 ─────────────────────────
+
 /// Resolve a Riot ID into player info (two-step: Riot ID → PUUID → summoner).
 #[tauri::command]
 pub async fn resolve_player(
@@ -28,13 +55,16 @@ pub async fn resolve_player(
     tag_line: String,
     platform: String,
 ) -> Result<PlayerInfo, String> {
-    let client = RiotApiClient::new(state.api_mode.clone());
-    // Use the platform from the frontend, or fall back to the env default
-    let platform = if platform.is_empty() {
-        std::env::var("RIOT_PLATFORM").unwrap_or_else(|_| "kr".into())
-    } else {
-        platform
+    let (api_mode, platform) = {
+        let platform = if platform.is_empty() {
+            std::env::var("RIOT_PLATFORM").unwrap_or_else(|_| "kr".into())
+        } else {
+            platform
+        };
+        (state.api_mode.clone(), platform)
     };
+
+    let client = RiotApiClient::new(api_mode);
 
     // Step 1: account lookup (PUUID)
     let account = client.resolve_puuid(&game_name, &tag_line)
@@ -50,6 +80,7 @@ pub async fn resolve_player(
     let game_name = account.game_name.clone().unwrap_or_default();
     let tag_line = account.tag_line.clone().unwrap_or_default();
     let puuid = account.puuid.clone();
+    let summoner_id = summoner.id.clone().unwrap_or_default();
     let conn = state.db.lock().map_err(|e| e.to_string())?;
     conn.execute(
         "INSERT OR REPLACE INTO players (puuid, game_name, tag_line, summoner_id, summoner_level, profile_icon_id)
@@ -58,7 +89,7 @@ pub async fn resolve_player(
             puuid,
             game_name,
             tag_line,
-            summoner.id.unwrap_or_default(),
+            summoner_id,
             summoner.summoner_level.unwrap_or(0),
             summoner.profile_icon_id.unwrap_or(0),
         ],
@@ -72,10 +103,13 @@ pub async fn resolve_player(
         game_name: account.game_name.unwrap_or_default(),
         tag_line: account.tag_line.unwrap_or_default(),
         summoner_level: summoner.summoner_level.unwrap_or(0),
+        summoner_id,
     })
 }
 
-/// Fetch recent match history for the active player.
+/// ── TFT-MATCH-V1 ─────────────────────────────────────────
+
+/// Fetch recent match history for the active player from local DB.
 #[tauri::command]
 pub fn get_match_history(
     state: State<'_, AppState>,
@@ -104,6 +138,172 @@ pub fn get_match_history(
     rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
 }
 
+/// Refresh match history from live Riot API — fetches IDs, filters cached,
+/// fetches details, stores in DB. Returns counts of what happened.
+#[tauri::command]
+pub async fn refresh_matches(
+    state: State<'_, AppState>,
+    count: i64,
+) -> Result<RefreshResult, String> {
+    let (puuid, region, api_mode) = {
+        let puuid = state.active_puuid.lock()
+            .map_err(|e| e.to_string())?
+            .clone()
+            .ok_or("No player linked")?;
+        let region = std::env::var("RIOT_REGION").unwrap_or_else(|_| "asia".into());
+        (puuid, region, state.api_mode.clone())
+    };
+
+    let client = RiotApiClient::new(api_mode);
+
+    // Step 1: Fetch match IDs from API
+    let match_ids = client.get_match_ids(&puuid, &region, count)
+        .await
+        .map_err(|e| format!("Failed to fetch match IDs: {}", e))?;
+
+    let total = match_ids.len();
+    let mut new = 0;
+    let mut errs = 0;
+    let mut to_fetch = Vec::new();
+
+    // Step 2: Cache-check — identify matches not yet in DB
+    {
+        let conn = state.db.lock().map_err(|e| e.to_string())?;
+        for match_id in &match_ids {
+            if !db::match_exists(&conn, match_id).map_err(|e| e.to_string())? {
+                to_fetch.push(match_id.clone());
+            }
+        }
+    } // conn lock released here
+
+    // Step 3–6: Fetch matches and store (lock released before async work)
+    for match_id in &to_fetch {
+        let detail = client.get_match_detail(match_id, &region).await;
+        let dto = match detail {
+            Ok(d) => d,
+            Err(_) => { errs += 1; continue; }
+        };
+
+        let participants = RiotApiClient::parse_participants(&dto, &puuid);
+        if participants.is_empty() {
+            errs += 1;
+            continue;
+        }
+        let p = &participants[0];
+
+        let game_datetime = dto.info.as_ref()
+            .and_then(|i| i.get("game_datetime")?.as_i64())
+            .unwrap_or(0);
+        let game_length = dto.info.as_ref()
+            .and_then(|i| i.get("game_length")?.as_f64())
+            .unwrap_or(0.0);
+        let game_version = dto.info.as_ref()
+            .and_then(|i| i.get("game_version")?.as_str())
+            .unwrap_or("")
+            .to_string();
+        let tft_set = dto.info.as_ref()
+            .and_then(|i| i.get("tft_set_canonical")?.as_str())
+            .unwrap_or("")
+            .to_string();
+        let queue_id = dto.info.as_ref()
+            .and_then(|i| i.get("queue_id")?.as_i64())
+            .unwrap_or(1100);
+
+        // Re-acquire conn for write
+        let conn = state.db.lock().map_err(|e| e.to_string())?;
+        db::upsert_match_participant(
+            &conn, match_id, &p.puuid, p.placement,
+            p.gold_left, p.last_round, p.level, p.total_damage,
+            game_datetime, game_length, &game_version, &tft_set, queue_id,
+        ).map_err(|e| e.to_string())?;
+        drop(conn);
+        new += 1;
+    }
+
+    Ok(RefreshResult {
+        fetched: total,
+        new_matches: new,
+        errors: errs,
+    })
+}
+
+/// ── TFT-LEAGUE-V1 ────────────────────────────────────────
+
+/// Get ranked league info for the active player.
+#[tauri::command]
+pub async fn get_player_rank(
+    state: State<'_, AppState>,
+) -> Result<Vec<RankInfo>, String> {
+    let (_puuid, summoner_id, api_mode, platform) = {
+        let puuid = state.active_puuid.lock()
+            .map_err(|e| e.to_string())?
+            .clone()
+            .ok_or("No player linked")?;
+        let conn = state.db.lock().map_err(|e| e.to_string())?;
+        let summoner_id: String = conn.query_row(
+            "SELECT summoner_id FROM players WHERE puuid = ?1",
+            rusqlite::params![puuid],
+            |row| row.get(0),
+        ).map_err(|e| format!("Player not found in DB: {}", e))?;
+        let platform = std::env::var("RIOT_PLATFORM").unwrap_or_else(|_| "kr".into());
+        (puuid, summoner_id, state.api_mode.clone(), platform)
+    };
+
+    let client = RiotApiClient::new(api_mode);
+    let entries = client.get_league_entries(&platform, &summoner_id)
+        .await
+        .map_err(|e| format!("League lookup failed: {}", e))?;
+
+    let ranks: Vec<RankInfo> = entries.into_iter().map(|e| RankInfo {
+        tier: e.tier.unwrap_or_else(|| "UNRANKED".into()),
+        rank: e.rank.unwrap_or_else(|| "".into()),
+        league_points: e.league_points.unwrap_or(0),
+        wins: e.wins.unwrap_or(0),
+        losses: e.losses.unwrap_or(0),
+        queue_type: e.queue_type.unwrap_or_else(|| "RANKED_TFT".into()),
+    }).collect();
+
+    Ok(ranks)
+}
+
+/// ── TFT-SPECTATOR-V5 ─────────────────────────────────────
+
+/// Check if the active player is currently in a game.
+/// Compliance note: Only returns in_game bool + game start time.
+/// NO opponent data, NO board composition info, NO scouting.
+#[tauri::command]
+pub async fn get_active_game_status(
+    state: State<'_, AppState>,
+) -> Result<ActiveGameStatus, String> {
+    let (puuid, api_mode, platform) = {
+        let puuid = state.active_puuid.lock()
+            .map_err(|e| e.to_string())?
+            .clone()
+            .ok_or("No player linked")?;
+        let platform = std::env::var("RIOT_PLATFORM").unwrap_or_else(|_| "kr".into());
+        (puuid, state.api_mode.clone(), platform)
+    };
+
+    let client = RiotApiClient::new(api_mode);
+    let result = client.get_active_game(&platform, &puuid).await
+        .map_err(|e| format!("Active game check failed: {}", e))?;
+
+    match result {
+        Some(game) => Ok(ActiveGameStatus {
+            in_game: true,
+            game_id: game.game_id,
+            game_start_time: game.game_start_time,
+        }),
+        None => Ok(ActiveGameStatus {
+            in_game: false,
+            game_id: None,
+            game_start_time: None,
+        }),
+    }
+}
+
+/// ── OVERLAY ──────────────────────────────────────────────
+
 /// Enable cursor interactivity — called when mouse enters a HUD element.
 #[tauri::command]
 pub fn hud_bounds_enter(window: tauri::Window) {
@@ -115,6 +315,8 @@ pub fn hud_bounds_enter(window: tauri::Window) {
 pub fn hud_bounds_leave(window: tauri::Window) {
     crate::overlay::set_passthrough(&window, true);
 }
+
+/// ── GDPR ─────────────────────────────────────────────────
 
 /// GDPR account deletion — cascade wipes player + matches.
 #[tauri::command]
@@ -130,6 +332,8 @@ pub fn request_account_deletion(
     db::purge_player(&conn, &puuid).map_err(|e| e.to_string())?;
     Ok("Account data purged from local storage. Cloud data will be removed within 30 days.".into())
 }
+
+/// ── STATS ────────────────────────────────────────────────
 
 /// Get aggregate stats (compliance-safe — no Augment/Legend rates).
 #[tauri::command]

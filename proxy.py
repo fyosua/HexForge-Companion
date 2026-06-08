@@ -7,6 +7,15 @@ Starts on port 1421.
 
 Usage:
   python3 proxy.py
+
+Endpoints:
+  GET  /api/health
+  POST /api/resolve-player
+  POST /api/get-match-history
+  POST /api/get-player-stats
+  POST /api/get-player-rank
+  POST /api/get-active-game-status
+  POST /api/refresh-matches
 """
 
 import json
@@ -23,6 +32,7 @@ MOCK_PLAYER = {
     "game_name": "HexTactician",
     "tag_line": "KR1",
     "summoner_level": 482,
+    "summoner_id": "jX8mN2pQ5rT7vB9kL1cH3wF6yA0sD4gE",
 }
 
 MOCK_MATCHES = [
@@ -39,6 +49,23 @@ MOCK_STATS = {
     "wins": 1,
     "top4": 3,
     "win_rate_pct": 20.0,
+}
+
+MOCK_RANK = [
+    {
+        "tier": "DIAMOND",
+        "rank": "II",
+        "league_points": 43,
+        "wins": 87,
+        "losses": 73,
+        "queue_type": "RANKED_TFT",
+    }
+]
+
+MOCK_ACTIVE_GAME = {
+    "in_game": False,
+    "game_id": None,
+    "game_start_time": None,
 }
 
 
@@ -69,6 +96,16 @@ class MockAPIHandler(http.server.BaseHTTPRequestHandler):
         elif parsed.path == "/api/get-player-stats":
             self._json(200, MOCK_STATS)
 
+        elif parsed.path in ("/api/get-player-rank", "/api/get-player-rank"):
+            self._json(200, MOCK_RANK)
+
+        elif parsed.path in ("/api/get-active-game-status", "/api/get-active-game-status"):
+            self._json(200, MOCK_ACTIVE_GAME)
+
+        elif parsed.path == "/api/refresh-matches":
+            count = data.get("count", 10)
+            self._json(200, {"fetched": count, "new_matches": min(3, count), "errors": 0})
+
         else:
             self._json(404, {"error": "not found"})
 
@@ -91,7 +128,14 @@ class MockAPIHandler(http.server.BaseHTTPRequestHandler):
 if __name__ == "__main__":
     server = http.server.HTTPServer((HOST, PORT), MockAPIHandler)
     print(f"[HexForge Proxy] Mock API running on http://{HOST}:{PORT}")
-    print(f"[HexForge Proxy] Endpoints: /api/health, /api/resolve-player, /api/get-match-history, /api/get-player-stats")
+    print(f"[HexForge Proxy] Endpoints:")
+    print(f"  GET  /api/health")
+    print(f"  POST /api/resolve-player")
+    print(f"  POST /api/get-match-history")
+    print(f"  POST /api/get-player-stats")
+    print(f"  POST /api/get-player-rank")
+    print(f"  POST /api/get-active-game-status")
+    print(f"  POST /api/refresh-matches")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
