@@ -2,17 +2,18 @@
   "identifier": "default",
   "description": "Default capabilities for HexForge Companion",
   "windows": [
-    "overlay"
-  ],
-  "permissions": [
-    "core:default",
-    "opener:default",
-    "shell:allow-open",
-    "updater:default",
-    "process:default",
-    "process:allow-restart",
-    "global-shortcut:default",
-    "global-shortcut:allow-register",
-    "global-shortcut:allow-unregister"
-  ]
+      "overlay",
+      "dashboard"
+    ],
+    "permissions": [
+      "core:default",
+      "opener:default",
+      "shell:allow-open",
+      "updater:default",
+      "process:default",
+      "process:allow-restart",
+      "global-shortcut:default",
+      "global-shortcut:allow-register",
+      "global-shortcut:allow-unregister"
+    ]
 }
