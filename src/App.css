@@ -39,6 +39,26 @@ body {
   text-align: center;
   font-size: 11px;
   backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.hex-download-link {
+  display: inline-block;
+  background: #c8a84e;
+  color: #000;
+  padding: 3px 10px;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 11px;
+  pointer-events: auto;
+  transition: background 0.15s;
+}
+.hex-download-link:hover {
+  background: #d4b85a;
 }
 
 /* ── Header ───────────────────────────────────────────── */

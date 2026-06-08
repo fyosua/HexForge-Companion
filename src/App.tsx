@@ -142,7 +142,8 @@ function App() {
     <div className="app-container">
       {!inTauri && (
         <div className="hex-browser-banner">
-          ⚡ Browser preview — mock API on port 1421.
+          <span>⚡ Browser preview — mock API on port 1421.</span>
+          <a className="hex-download-link" href="http://raspberrypi.local:1421/download/" target="_blank">⬇ Download .exe</a>
         </div>
       )}
 
