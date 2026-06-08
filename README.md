@@ -5,7 +5,6 @@
 Version **0.6.1** • Built with **Rust + Tauri v2** — no Overwolf, no bloat, transparent frameless overlay that auto-attaches to the TFT game window.
 
 [![Download Windows .exe](https://img.shields.io/badge/Windows-.exe-0078D6?logo=windows&logoColor=white)](https://github.com/fyosua/HexForge-Companion/releases)
-[![Download Linux ARM64](https://img.shields.io/badge/Linux-ARM64-E95420?logo=linux&logoColor=white)](http://raspberrypi.local:1421/download/hexforge-companion-linux-arm64)
 [![GitHub Release](https://img.shields.io/github/v/release/fyosua/HexForge-Companion?color=c8a84e&label=Release)](https://github.com/fyosua/HexForge-Companion/releases)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/fyosua/HexForge-Companion/release.yml?branch=main&label=CI)](https://github.com/fyosua/HexForge-Companion/actions)
 
