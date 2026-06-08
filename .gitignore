@@ -1,0 +1,28 @@
+# Secrets
+.env
+*.env.local
+*.env.production
+
+# Rust build artifacts
+src-tauri/target/
+src-tauri/target/debug/
+src-tauri/target/release/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Tauri
+src-tauri/icons/*.png
+src-tauri/icons/*.ico
