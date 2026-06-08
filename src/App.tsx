@@ -32,7 +32,7 @@ function isTauri(): boolean {
   catch { return false; }
 }
 
-const PROXY_URL = "http://raspberrypi.local:1421";
+const PROXY_URL = window.location.origin;
 
 async function tauriInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
   if (isTauri()) {

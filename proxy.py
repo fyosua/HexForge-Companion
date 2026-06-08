@@ -153,9 +153,7 @@ class MockAPIHandler(http.server.BaseHTTPRequestHandler):
 
         # Redirect /app to the Vite dev server (or Tauri app)
         elif parsed.path == "/app" or parsed.path == "/app/":
-            self.send_response(302)
-            self.send_header("Location", "http://raspberrypi.local:1420/")
-            self.end_headers()
+            self._serve_frontend()
 
         # Landing page at root
         elif parsed.path == "/" or parsed.path == "/index.html":
@@ -164,6 +162,10 @@ class MockAPIHandler(http.server.BaseHTTPRequestHandler):
         # Static assets from landing/ directory
         elif parsed.path.startswith("/landing/"):
             self._serve_static(parsed.path)
+
+        # Frontend assets (built dist/)
+        elif parsed.path.startswith("/assets/"):
+            self._serve_frontend_asset(parsed.path)
 
         # Favicon
         elif parsed.path.startswith("/favicon-"):
@@ -247,6 +249,49 @@ class MockAPIHandler(http.server.BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", mime)
         self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+        self.wfile.write(data)
+        print(f"[proxy] Served {path} ({len(data)} bytes)")
+
+    def _serve_frontend(self):
+        """Serve the built frontend from dist/ directory."""
+        dist_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dist")
+        index_path = os.path.join(dist_dir, "index.html")
+        if os.path.isfile(index_path):
+            with open(index_path, "rb") as f:
+                data = f.read()
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(data)
+            print(f"[proxy] Served /app (frontend build, {len(data)} bytes)")
+        else:
+            self._json(503, {"error": "Frontend build not found. Run `npm run build` first."})
+
+    def _serve_frontend_asset(self, path):
+        """Serve a built frontend asset from dist/."""
+        dist_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dist")
+        rel_path = path.lstrip("/")
+        filepath = os.path.join(dist_dir, rel_path)
+        if not os.path.isfile(filepath):
+            self._json(404, {"error": "asset not found"})
+            return
+        with open(filepath, "rb") as f:
+            data = f.read()
+        ext = os.path.splitext(filepath)[1].lower()
+        mime = {
+            ".js": "application/javascript; charset=utf-8",
+            ".css": "text/css; charset=utf-8",
+            ".png": "image/png",
+            ".svg": "image/svg+xml",
+            ".ico": "image/x-icon",
+            ".woff2": "font/woff2",
+        }.get(ext, "application/octet-stream")
+        self.send_response(200)
+        self.send_header("Content-Type", mime)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Cache-Control", "public, max-age=31536000, immutable")
         self.end_headers()
         self.wfile.write(data)
         print(f"[proxy] Served {path} ({len(data)} bytes)")

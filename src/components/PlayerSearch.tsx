@@ -21,8 +21,8 @@ function isTauri(): boolean {
   }
 }
 
-/** Proxy URL for browser mode — defaults to the mock API */
-const PROXY_URL = "http://raspberrypi.local:1421";
+/** Proxy URL for browser mode — uses current host */
+const PROXY_URL = window.location.origin;
 
 /** Tauri invoke wrapper — gracefully falls back to HTTP proxy in browser */
 async function invokePlayer(
