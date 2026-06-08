@@ -4,20 +4,20 @@
 # Builds the Windows .exe + NSIS installer on a native Windows runner.
 # Trigger: push a tag v*.*.* or manual dispatch from Actions tab.
 
-name: "release-windows"
+name: "release"
 
 on:
   workflow_dispatch:
   push:
     tags:
-      - "v*.*.*"
+      - "v*"
 
 permissions:
   contents: write
 
 jobs:
   build-windows:
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -36,7 +36,7 @@ jobs:
         run: npm ci
 
       - name: Build Tauri app (Windows NSIS + MSI)
-        uses: tauri-apps/tauri-action@v1
+        uses: tauri-apps/tauri-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -48,6 +48,7 @@ jobs:
             ### Downloads
             - **Windows**: `HexForge-Companion_*_x64-setup.exe`
             - **Windows**: `HexForge-Companion_*_x64_en-US.msi`
+            - **Linux (ARM64)**: Download from the [landing page](https://github.com/fyosua/HexForge-Companion#download) or build from source
 
             ### Quick Start
             1. Download the .exe installer
