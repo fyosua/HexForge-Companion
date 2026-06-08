@@ -280,9 +280,6 @@ pub fn spawn_watcher(
                             puuid_clear_emitted = true;
                         }
                     }
-                        }
-                    }
-                }
 
                 last_state = current;
             }
