@@ -151,7 +151,7 @@ class MockAPIHandler(http.server.BaseHTTPRequestHandler):
         elif parsed.path.startswith("/download/"):
             self._serve_download(parsed.path)
 
-        # Redirect /app to the Vite dev server (or Tauri app)
+        # Redirect /app to built frontend
         elif parsed.path == "/app" or parsed.path == "/app/":
             self._serve_frontend()
 
@@ -173,6 +173,10 @@ class MockAPIHandler(http.server.BaseHTTPRequestHandler):
 
         else:
             self._json(404, {"error": "not found"})
+
+    def do_HEAD(self):
+        """Handle HEAD requests — same as GET but no body."""
+        self.do_GET()
 
     FAVICON_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "src-tauri", "icons")
 
