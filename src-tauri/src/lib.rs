@@ -1,5 +1,5 @@
 use rusqlite::Connection;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex};
 use tauri::Manager;
 
@@ -84,8 +84,11 @@ pub fn show_dashboard(handle: &tauri::AppHandle) {
 fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     use tauri::menu::{Menu, MenuItem};
 
-    let icon = tauri::image::Image::from_bytes(include_bytes!("../icons/icon.ico"))
-        .expect("load tray icon");
+    let icon_png = include_bytes!("../icons/128x128.png");
+    let icon_img = image::load_from_memory(icon_png).expect("decode tray icon");
+    let rgba = icon_img.to_rgba8();
+    let (w, h) = rgba.dimensions();
+    let icon = tauri::image::Image::new_owned(rgba.into_raw(), w, h);
 
     let show = MenuItem::with_id(app, "show", "Show Overlay", true, None::<&str>)?;
     let hide = MenuItem::with_id(app, "hide", "Show Dashboard", true, None::<&str>)?;
@@ -106,9 +109,7 @@ fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
             if matches!(event, tauri::tray::TrayIconEvent::DoubleClick {
                 button: tauri::tray::MouseButton::Left, ..
             }) {
-                if let Some(handler) = tray.app_handle() {
-                    show_overlay(handler);
-                }
+                show_overlay(tray.app_handle());
             }
         })
         .build(app)?;
