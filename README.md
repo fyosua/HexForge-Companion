@@ -118,6 +118,25 @@ HexForge Companion complies with all Riot Games Third-Party Application Policies
 
 See [docs/COMPLIANCE.md](docs/COMPLIANCE.md) for the full audit.
 
+## 🏆 Why HexForge Companion?
+
+| Competitor | Framework | Binary | CPU Idle | Privacy | TFT Overlay |
+|-----------|----------|--------|---------|---------|------------|
+| **Mobalytics** | Overwolf | 200MB+ | 3-8% | Telemetry + ads | Overwolf wrapper |
+| **MetaTFT** | Overwolf | 200MB+ | 3-8% | Telemetry | Overwolf wrapper |
+| **TFTactics** | Overwolf | 200MB+ | 3-8% | Telemetry | Overwolf wrapper |
+| **DAK.GG** | Electron | ~100MB | 2-5% | Telemetry | Multi-game |
+| **Tactics.tools** | Web only | N/A | N/A | Minimal | **No overlay** |
+| **HexForge Companion** | **Rust + Tauri** | **<15MB** | **<1%** | **Zero telemetry** | **Native transparent overlay** |
+
+**Key differentiators:**
+- **No Overwolf** — standalone native app, not a wrapper around a bloated platform
+- **<15MB binary** — "smaller than a single screenshot"
+- **Zero telemetry by default** — your data stays on your machine
+- **Built-in mock mode** — no API key needed to see it work
+- **Privacy-first** — one-click GDPR wipe, open source (MIT)
+- **Cross-platform** — Windows, macOS, Linux (Overwolf is Windows-only)
+
 ## 📚 Documentation
 
 | Document | Description |

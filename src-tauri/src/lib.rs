@@ -1,17 +1,21 @@
 use rusqlite::Connection;
-use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 use tauri::Manager;
 
 mod api;
 mod db;
 mod overlay;
 mod commands;
+mod process_watcher;
 
 pub struct AppState {
     pub db: Mutex<Connection>,
     pub api_key: String,
     pub api_mode: api::ApiMode,
     pub active_puuid: Mutex<Option<String>>,
+    /// Shared flag that keeps the process-watcher thread alive.
+    pub watcher_running: Arc<AtomicBool>,
 }
 
 /// Print a formatted startup banner with version, mode, and paths.
@@ -28,16 +32,16 @@ fn print_startup_banner(api_mode: &api::ApiMode, db_path: &std::path::Path) {
 
     match api_mode {
         api::ApiMode::Mock => {
-            eprintln!("  MODE: Mock (offline) — no API calls");
+            eprintln!("  MODE: Mock (offline) \u{2014} no API calls");
             eprintln!("  Set RGAPI_KEY in .env for live data");
         }
         api::ApiMode::Direct { region, platform, .. } => {
-            eprintln!("  MODE: Direct — live Riot API");
+            eprintln!("  MODE: Direct \u{2014} live Riot API");
             eprintln!("     region:   {}", region);
             eprintln!("     platform: {}", platform);
         }
         api::ApiMode::Proxy { proxy_base } => {
-            eprintln!("  MODE: Proxy — routed through backend");
+            eprintln!("  MODE: Proxy \u{2014} routed through backend");
             eprintln!("     proxy: {}", proxy_base);
         }
     }
@@ -48,14 +52,14 @@ fn print_startup_banner(api_mode: &api::ApiMode, db_path: &std::path::Path) {
 fn warn_if_production_mock(api_mode: &api::ApiMode) {
     if *api_mode == api::ApiMode::Mock && !cfg!(debug_assertions) {
         eprintln!(
-            "[HexForge] RELEASE BUILD running in MOCK mode — no RGAPI_KEY configured.\n\
+            "[HexForge] RELEASE BUILD running in MOCK mode \u{2014} no RGAPI_KEY configured.\n\
              [HexForge]    Create a .env file with RGAPI_KEY=*** for live data, or\n\
              [HexForge]    set USE_MOCK=true in .env to silence this warning."
         );
     }
 }
 
-/// Show overlay window, hide dashboard — called on TFT attach.
+/// Show overlay window, hide dashboard \u{2014} called on TFT attach.
 pub fn show_overlay(handle: &tauri::AppHandle) {
     if let Some(overlay) = handle.get_webview_window("overlay") {
         let _ = overlay.show();
@@ -65,7 +69,7 @@ pub fn show_overlay(handle: &tauri::AppHandle) {
     }
 }
 
-/// Hide overlay window, show dashboard — called on TFT detach.
+/// Hide overlay window, show dashboard \u{2014} called on TFT detach.
 pub fn show_dashboard(handle: &tauri::AppHandle) {
     if let Some(overlay) = handle.get_webview_window("overlay") {
         let _ = overlay.hide();
@@ -74,6 +78,43 @@ pub fn show_dashboard(handle: &tauri::AppHandle) {
         let _ = dashboard.show();
         let _ = dashboard.set_focus();
     }
+}
+
+/// Build the system tray icon and menu with show/hide/quit.
+fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    use tauri::menu::{Menu, MenuItem};
+
+    let icon = tauri::image::Image::from_bytes(include_bytes!("../icons/icon.ico"))
+        .expect("load tray icon");
+
+    let show = MenuItem::with_id(app, "show", "Show Overlay", true, None::<&str>)?;
+    let hide = MenuItem::with_id(app, "hide", "Show Dashboard", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", "Quit HexForge", true, None::<&str>)?;
+    let menu = Menu::with_items(app, &[&show, &hide, &quit])?;
+
+    tauri::tray::TrayIconBuilder::new()
+        .icon(icon)
+        .tooltip("HexForge Companion")
+        .menu(&menu)
+        .on_menu_event(|handler, event| match event.id().as_ref() {
+            "show" => show_overlay(handler),
+            "hide" => show_dashboard(handler),
+            "quit" => handler.exit(0),
+            _ => {}
+        })
+        .on_tray_icon_event(|tray, event| {
+            if matches!(event, tauri::tray::TrayIconEvent::DoubleClick {
+                button: tauri::tray::MouseButton::Left, ..
+            }) {
+                if let Some(handler) = tray.app_handle() {
+                    show_overlay(handler);
+                }
+            }
+        })
+        .build(app)?;
+
+    eprintln!("[HexForge] Tray icon registered");
+    Ok(())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -113,17 +154,38 @@ pub fn run() {
     print_startup_banner(&api_mode, &db_path);
     warn_if_production_mock(&api_mode);
 
+    // Shared flag for the process watcher thread
+    let watcher_flag = Arc::new(AtomicBool::new(true));
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .setup(move |app| {
+            // Show dashboard on startup (overlay starts hidden)
+            show_dashboard(app.handle());
+
+            // Start TFT process watcher
+            let handle = app.handle().clone();
+            process_watcher::spawn_watcher(handle, 2000);
+            eprintln!("[HexForge] Process watcher started (polling every 2s)");
+
+            // Register system tray
+            #[cfg(desktop)]
+            if let Err(e) = setup_tray(app) {
+                eprintln!("[HexForge] Tray setup failed: {e}");
+            }
+
+            Ok(())
+        })
         .manage(AppState {
             db: Mutex::new(conn),
             api_key,
             api_mode,
             active_puuid: Mutex::new(None),
+            watcher_running: watcher_flag,
         })
         .invoke_handler(tauri::generate_handler![
             commands::resolve_player,
@@ -141,11 +203,6 @@ pub fn run() {
             commands::hud_bounds_leave,
             commands::request_account_deletion,
         ])
-        .setup(|app| {
-            // Show dashboard on startup (overlay starts hidden)
-            show_dashboard(app.handle());
-            Ok(())
-        })
         .run(tauri::generate_context!())
         .expect("error while running HexForge Companion");
 }
