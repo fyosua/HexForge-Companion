@@ -103,12 +103,7 @@ function App() {
     return () => clearInterval(interval);
   }, [pinned, player]);
 
-  const handlePlayerResolved = useCallback((p: PlayerInfo) => {
-    setPlayer(p);
-    setError(null);
-    handleRefreshMatches();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // ── Handlers ─────────────────────────────────────────
 
   const handleRefreshMatches = async () => {
     setRefreshLoading(true);
@@ -122,10 +117,16 @@ function App() {
     }
   };
 
+  const handlePlayerResolved = useCallback((p: PlayerInfo) => {
+    setPlayer(p);
+    setError(null);
+    handleRefreshMatches();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handlePin = () => {
     if (!player) return;
     setPinned(!pinned);
-    // Grab current rank for the pinned display
     tauriInvoke<RankInfo[]>("get_player_rank").then((ranks) => {
       const tft = (ranks ?? []).find(
         (r) => r.queue_type === "RANKED_TFT" || r.queue_type === "RANKED_TFT_TURBO"
@@ -146,7 +147,6 @@ function App() {
         </div>
       )}
 
-      {/* Pinned overlay — shows when pinned, outside main layout */}
       {pinned && player && (
         <PinnedWidget
           data={player}
@@ -156,7 +156,6 @@ function App() {
         />
       )}
 
-      {/* Main dash — hidden when pinned, show compact search */}
       {!pinned && (
         <header className="hex-header">
           <h1>HexForge Companion</h1>
@@ -210,7 +209,6 @@ function App() {
           </div>
         )}
 
-        {/* When pinned, show minimal search */}
         {player && pinned && (
           <div style={{ fontSize: 10, color: "#666", textAlign: "center", marginTop: 4 }}>
             <button

@@ -72,7 +72,7 @@ export function LeaderboardDisplay() {
             const total = (entry.wins || 0) + (entry.losses || 0);
             const wr = total > 0 ? ((entry.wins || 0) / total * 100).toFixed(1) : "0.0";
             return (
-              <div key={i} className="hex-lb-row">
+              <div key={`${data?.tier || active}-${i}`} className="hex-lb-row">
                 <span className="hex-lb-rank">#{i + 1}</span>
                 <span className="hex-lb-lp" style={{ color: tierColor(data?.tier) }}>
                   {entry.league_points || 0}
