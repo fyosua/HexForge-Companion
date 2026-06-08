@@ -243,18 +243,15 @@ class MockAPIHandler(http.server.BaseHTTPRequestHandler):
     {f'<a class="btn" href="/download/hexforge-companion.exe">Download .exe ({exe_size // 1024 // 1024} MB)</a>' if exe_exists else '<button class="btn" disabled>Build in progress...</button>'}
     <div class="status">{f'✅ Build complete — {exe_size // 1024 // 1024} MB' if exe_exists else '⏳ Cross-compilation is running...'}</div>
     <div class="info">
-      <strong>Requirements:</strong>
-      <ul>
-        <li>Windows 10+ (x86_64)</li>
-        <li>WebView2 Runtime (pre-installed on Windows 10+)</li>
-        <li>Riot Games API key for live data</li>
-      </ul>
-      <strong>Setup:</strong>
+      <strong>Zero config:</strong> Download and run — the app works in <strong>Mock mode</strong> out of the box with no API key needed. Full features work immediately.
+      <br><br>
+      <strong>Optional: Live data with API key</strong>
       <ol>
-        <li>Download the .exe</li>
-        <li>Create a <code>.env</code> file next to it with <code>RGAPI_KEY=...</code></li>
-        <li>Run the binary</li>
+        <li>Create a <code>.env</code> file next to the <code>.exe</code></li>
+        <li>Add <code>RGAPI_KEY=RGAPI-xxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</code></li>
+        <li>Restart the app — automatically switches to live API mode</li>
       </ol>
+      <p style="font-size:10px;color:#888;">No API key? Mock mode uses pre-built mock data for all features.</p>
     </div>
     <p style="font-size:10px;color:#555;">Built from <a href="https://github.com/fyosua/HexForge-Companion" style="color:#5dade2;">github.com/fyosua/HexForge-Companion</a></p>
   </div>
