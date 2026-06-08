@@ -4,6 +4,18 @@ use crate::AppState;
 use serde::Serialize;
 use tauri::State;
 
+/// Map a platform routing value to its correct regional routing.
+/// Used for ACCOUNT-V1, TFT-MATCH-V1, etc. which use regional hosts.
+fn platform_to_region(platform: &str) -> &str {
+    match platform {
+        "br1" | "na1" | "la1" | "la2" => "americas",
+        "eun1" | "euw1" | "tr1" | "ru" | "me1" => "europe",
+        "kr" | "jp1" => "asia",
+        "oc1" | "sg2" | "ph2" | "tw2" | "vn2" => "sea",
+        _ => "asia", // safe fallback
+    }
+}
+
 #[derive(Serialize)]
 pub struct PlayerInfo {
     pub puuid: String,
@@ -55,13 +67,14 @@ pub async fn resolve_player(
     tag_line: String,
     platform: String,
 ) -> Result<PlayerInfo, String> {
-    let (api_mode, platform) = {
+    let (api_mode, platform, region) = {
         let platform = if platform.is_empty() {
             std::env::var("RIOT_PLATFORM").unwrap_or_else(|_| "kr".into())
         } else {
             platform
         };
-        (state.api_mode.clone(), platform)
+        let region = platform_to_region(&platform).to_string();
+        (state.api_mode.clone(), platform, region)
     };
 
     let client = RiotApiClient::new(api_mode);
@@ -150,7 +163,8 @@ pub async fn refresh_matches(
             .map_err(|e| e.to_string())?
             .clone()
             .ok_or("No player linked")?;
-        let region = std::env::var("RIOT_REGION").unwrap_or_else(|_| "asia".into());
+        let platform = std::env::var("RIOT_PLATFORM").unwrap_or_else(|_| "kr".into());
+        let region = platform_to_region(&platform).to_string();
         (puuid, region, state.api_mode.clone())
     };
 

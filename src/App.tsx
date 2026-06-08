@@ -43,6 +43,7 @@ function App() {
   const [inTauri, setInTauri] = useState(false);
   const [refreshMsg, setRefreshMsg] = useState<string | null>(null);
   const [refreshLoading, setRefreshLoading] = useState(false);
+  const [refreshCounter, setRefreshCounter] = useState(0);
 
   useEffect(() => {
     setInTauri(isTauri());
@@ -76,6 +77,8 @@ function App() {
   const handlePlayerResolved = (p: PlayerInfo) => {
     setPlayer(p);
     setError(null);
+    // Auto-refresh matches for the resolved player
+    handleRefreshMatches();
   };
 
   const handleRefreshMatches = async () => {
@@ -86,6 +89,7 @@ function App() {
       setRefreshMsg(
         `Fetched ${result.fetched} IDs, ${result.new_matches} new, ${result.errors} errors`
       );
+      setRefreshCounter((c) => c + 1);
     } catch (err) {
       setRefreshMsg(`Error: ${err}`);
     } finally {
@@ -126,8 +130,8 @@ function App() {
             <InGameIndicator />
             <PlatformStatus />
             <LeaderboardDisplay />
-            <RankDisplay />
-            <PlayerStats />
+            <RankDisplay key={refreshCounter} />
+            <PlayerStats key={refreshCounter} />
             <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12 }}>
               <button
                 onClick={handleRefreshMatches}
@@ -149,7 +153,7 @@ function App() {
                 <span style={{ color: "#aaa", fontSize: 11 }}>{refreshMsg}</span>
               )}
             </div>
-            <MatchHistory />
+            <MatchHistory key={refreshCounter} />
           </div>
         )}
       </main>
