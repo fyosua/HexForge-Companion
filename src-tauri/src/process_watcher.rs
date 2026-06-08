@@ -253,6 +253,13 @@ pub fn spawn_watcher(
                             "[HexForge::Watcher] TFT attached \u{2014} window at ({},{}) {}x{}",
                             x, y, width, height
                         );
+                        // Switch to overlay mode: show overlay, hide dashboard
+                        if let Some(overlay) = app_handle.get_webview_window("overlay") {
+                            let _ = overlay.show();
+                        }
+                        if let Some(dashboard) = app_handle.get_webview_window("dashboard") {
+                            let _ = dashboard.hide();
+                        }
                         let _ = app_handle.emit("tft-attached", &payload);
                         detach_since = None;
                         puuid_clear_emitted = false;
@@ -260,9 +267,19 @@ pub fn spawn_watcher(
                     None | Some(TftState::Detached) => {
                         if !puuid_clear_emitted {
                             eprintln!("[HexForge::Watcher] TFT detached");
+                            // Switch to dashboard mode: hide overlay, show dashboard
+                            if let Some(overlay) = app_handle.get_webview_window("overlay") {
+                                let _ = overlay.hide();
+                            }
+                            if let Some(dashboard) = app_handle.get_webview_window("dashboard") {
+                                let _ = dashboard.show();
+                                let _ = dashboard.set_focus();
+                            }
                             let _ = app_handle.emit("tft-detached", &payload);
                             detach_since = Some(Instant::now());
-                            puuid_clear_emitted = true; // Only emit once per detach period
+                            puuid_clear_emitted = true;
+                        }
+                    }
                         }
                     }
                 }

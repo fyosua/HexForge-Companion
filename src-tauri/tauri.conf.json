@@ -12,6 +12,20 @@
   "app": {
     "windows": [
       {
+        "label": "dashboard",
+        "title": "HexForge Companion",
+        "width": 1200,
+        "height": 800,
+        "decorations": true,
+        "transparent": false,
+        "alwaysOnTop": false,
+        "focus": true,
+        "visible": true,
+        "skipTaskbar": false,
+        "resizable": true,
+        "center": true
+      },
+      {
         "label": "overlay",
         "title": "HexForge Companion",
         "width": 1920,

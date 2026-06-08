@@ -60,6 +60,30 @@ fn warn_if_production_mock(api_mode: &api::ApiMode) {
     }
 }
 
+// \u{2014}\u{2014} Window toggle helpers \u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}
+
+/// Called on TFT process attach: show overlay, hide dashboard.
+/// Both calls are best-effort (non-fatal if window doesn't exist).
+pub fn show_overlay(handle: &tauri::AppHandle) {
+    if let Some(overlay) = handle.get_webview_window("overlay") {
+        let _ = overlay.show();
+    }
+    if let Some(dashboard) = handle.get_webview_window("dashboard") {
+        let _ = dashboard.hide();
+    }
+}
+
+/// Called on TFT process detach: hide overlay, show dashboard.
+pub fn show_dashboard(handle: &tauri::AppHandle) {
+    if let Some(overlay) = handle.get_webview_window("overlay") {
+        let _ = overlay.hide();
+    }
+    if let Some(dashboard) = handle.get_webview_window("dashboard") {
+        let _ = dashboard.show();
+        let _ = dashboard.set_focus();
+    }
+}
+
 // \u{2014}\u{2014} System tray \u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}
 
 /// Build the system tray icon and menu.
@@ -87,15 +111,10 @@ fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         .menu(&menu)
         .on_menu_event(|app, event| match event.id().as_ref() {
             "show" => {
-                if let Some(window) = app.get_webview_window("overlay") {
-                    let _ = window.show();
-                    let _ = window.set_focus();
-                }
+                show_overlay(app);
             }
             "hide" => {
-                if let Some(window) = app.get_webview_window("overlay") {
-                    let _ = window.hide();
-                }
+                show_dashboard(app);
             }
             "quit" => {
                 app.exit(0);
@@ -111,10 +130,7 @@ fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
                 }
             ) {
                 if let Some(app) = tray.app_handle() {
-                    if let Some(window) = app.get_webview_window("overlay") {
-                        let _ = window.show();
-                        let _ = window.set_focus();
-                    }
+                    show_overlay(app);
                 }
             }
         })
@@ -169,6 +185,9 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .setup(move |app| {
+            // Show dashboard window by default (overlay starts hidden)
+            show_dashboard(app.handle());
+
             // Start TFT process watcher
             let handle = app.handle().clone();
             process_watcher::spawn_watcher(handle, 2000);

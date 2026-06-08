@@ -1,0 +1,74 @@
+# =============================================================================
+# HexForge Companion — Windows Release Build (GitHub Actions)
+# =============================================================================
+# Builds the Windows .exe + NSIS installer on a native Windows runner.
+# Uploads artifacts so you can download and test.
+#
+# WHY NOT CROSS-COMPILE FROM Pi:
+#   The Pi (aarch64) can cross-compile a .exe via mingw, but WebView2
+#   rendering + NSIS installer can only be verified on real Windows.
+#   This workflow runs on microsoft/windows-latest with WebView2 pre-installed.
+
+name: "release-windows"
+
+on:
+  # Manual trigger from Actions tab
+  workflow_dispatch:
+    inputs:
+      release_draft:
+        description: "Create as draft release?"
+        type: boolean
+        default: true
+
+  # Triggered by pushing a tag like v*.*.*
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build Tauri app (Windows NSIS)
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: hexforge-v__VERSION__
+          releaseName: "HexForge Companion v__VERSION__"
+          releaseBody: |
+            ## HexForge Companion v__VERSION__
+
+            ### Downloads
+            - **Windows**: `HexForge-Companion_*_x64-setup.exe` (NSIS installer)
+            - **Windows**: `HexForge-Companion_*_x64_en-US.msi` (MSI installer)
+
+            ### What's New
+            See [CHANGELOG](https://github.com/fyosua/HexForge-Companion/releases) for details.
+
+            ### Quick Start
+            1. Download the `.exe` installer
+            2. Run it — WebView2 is auto-installed if needed
+            3. No API key needed — works in Mock mode immediately
+          releaseDraft: ${{ inputs.release_draft || true }}
+          prerelease: false
+          args: "--bundles nsis,msi --target x86_64-pc-windows-msvc"

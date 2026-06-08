@@ -1,5 +1,5 @@
 # =============================================================================
-# HexForge Companion — Cross-Platform Tauri v2 Build & Release Workflow
+# HexForge Companion — Linux/macOS CI (Windows builds use release.yml)
 # =============================================================================
 # Triggers: push to 'release' branch + manual workflow_dispatch
 on:
