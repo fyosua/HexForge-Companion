@@ -31,6 +31,7 @@ chrono = { version = "0.4", features = ["serde"] }
 dirs = "5"
 dotenvy = "0.15"
 image = "0.25"
+tauri-plugin-single-instance = "2.4.2"
 
 # Platform-specific — Windows process detection
 [target.'cfg(windows)'.dependencies]

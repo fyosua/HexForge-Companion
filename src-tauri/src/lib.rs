@@ -14,6 +14,7 @@ pub struct AppState {
     pub api_key: String,
     pub api_mode: api::ApiMode,
     pub active_puuid: Mutex<Option<String>>,
+    pub active_player_info: Mutex<Option<commands::PlayerInfo>>,
     /// Shared flag that keeps the process-watcher thread alive.
     pub watcher_running: Arc<AtomicBool>,
 }
@@ -175,6 +176,15 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_single_instance::Builder::new()
+            .callback(|app, _args, _cwd| {
+                if let Some(dashboard) = app.get_webview_window("dashboard") {
+                    let _ = dashboard.show();
+                    let _ = dashboard.set_focus();
+                }
+            })
+            .build()
+        )
         .setup(move |app| {
             // Show dashboard on startup (overlay starts hidden)
             show_dashboard(app.handle());
@@ -197,6 +207,7 @@ pub fn run() {
             api_key,
             api_mode,
             active_puuid: Mutex::new(None),
+            active_player_info: Mutex::new(None),
             watcher_running: watcher_flag,
         })
         .invoke_handler(tauri::generate_handler![
@@ -215,6 +226,7 @@ pub fn run() {
             commands::show_dashboard,
             commands::get_api_mode,
             commands::get_db_path,
+            commands::get_active_player,
             commands::hud_bounds_enter,
             commands::hud_bounds_leave,
             commands::request_account_deletion,

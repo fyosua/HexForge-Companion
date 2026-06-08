@@ -181,6 +181,14 @@ function App() {
     tauriInvoke("show_dashboard");
   };
 
+  // On mount (overlay or dashboard), restore player state from backend
+  useEffect(() => {
+    if (!inTauri) return;
+    tauriInvoke<PlayerInfo | null>("get_active_player").then((p) => {
+      if (p) setPlayer(p);
+    }).catch(() => {});
+  }, [inTauri]);
+
   // ── Render helpers ────────────────────────────────────
 
   /** Dashboard TFT status banner */

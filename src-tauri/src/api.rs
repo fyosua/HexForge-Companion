@@ -189,6 +189,7 @@ fn mock_path() -> &'static PathBuf {
         let candidates = [
             exe_dir.join("mock"),
             exe_dir.join("../../../src-tauri/mock"),
+            exe_dir.join("../../../../src-tauri/mock"),
             PathBuf::from("src-tauri/mock"),
             PathBuf::from("../src-tauri/mock"),
         ];

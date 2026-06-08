@@ -16,7 +16,7 @@ fn platform_to_region(platform: &str) -> &str {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 pub struct PlayerInfo {
     pub puuid: String,
     pub game_name: String,
@@ -111,13 +111,17 @@ pub async fn resolve_player(
     // Update active PUUID
     *state.active_puuid.lock().map_err(|e| e.to_string())? = Some(account.puuid.clone());
 
-    Ok(PlayerInfo {
+    let player_info = PlayerInfo {
         puuid: account.puuid,
         game_name: account.game_name.unwrap_or_default(),
         tag_line: account.tag_line.unwrap_or_default(),
         summoner_level: summoner.summoner_level.unwrap_or(0),
         summoner_id,
-    })
+    };
+    // Share player info across all windows (dashboard + overlay)
+    *state.active_player_info.lock().map_err(|e| e.to_string())? = Some(player_info.clone());
+
+    Ok(player_info)
 }
 
 /// ── TFT-MATCH-V1 ─────────────────────────────────────────
@@ -499,4 +503,16 @@ pub fn get_player_stats(
     }).map_err(|e| e.to_string())?;
 
     Ok(stats)
+}
+
+/// ── SHARED STATE ─────────────────────────────────────────
+
+/// Get the currently active player info (bridged to overlay window).
+#[tauri::command]
+pub fn get_active_player(
+    state: State<'_, AppState>,
+) -> Result<Option<PlayerInfo>, String> {
+    state.active_player_info.lock()
+        .map_err(|e| e.to_string())
+        .map(|guard| guard.clone())
 }
