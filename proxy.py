@@ -31,7 +31,7 @@ import glob
 
 HOST = "0.0.0.0"
 PORT = 1421
-APP_VERSION = "0.6.0"
+APP_VERSION = "0.6.1"
 
 # Directory where built binaries are placed for download
 DOWNLOAD_DIR = os.path.join(

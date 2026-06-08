@@ -265,7 +265,7 @@
     <span class="hero-badge"><strong>Rust</strong> + Tauri v2</span>
   </div>
   <a href="#download" class="hero-cta">
-    ⬇ Download for Windows <small>v0.6.0</small>
+    ⬇ Download for Windows <small>v0.6.1</small>
   </a>
   <div class="hero-secondary">
     <a href="https://github.com/fyosua/HexForge-Companion">View on GitHub →</a>
@@ -411,8 +411,8 @@
     <div class="download-cards">
       <div class="download-card">
         <h3>⬇ Windows</h3>
-        <p class="plat">x86_64 · NSIS Installer</p>
-        <a href="/download/" class="download-btn" id="win-dl-btn">
+        <p class="plat">x86_64 · Portable .exe</p>
+        <a href="/download/hexforge-companion-x86_64.exe" class="download-btn" id="win-dl-btn">
           ⬇ Download <span class="build-status" id="win-build-status">Checking build status...</span>
         </a>
       </div>
@@ -503,8 +503,8 @@
   var linuxBtn = document.getElementById('linux-dl-btn');
   var linuxStatus = document.getElementById('linux-build-status');
 
-  // Check Windows build
-  fetch('/download/hexforge-companion.exe', { method: 'HEAD' })
+  // Check Windows build (cross-compiled .exe)
+  fetch('/download/hexforge-companion-x86_64.exe', { method: 'HEAD' })
     .then(function(r) {
       if (r.ok) {
         var size = r.headers.get('Content-Length');

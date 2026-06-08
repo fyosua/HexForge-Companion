@@ -1,7 +1,7 @@
 {
   "name": "hexforge-companion",
   "private": true,
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "TFT desktop companion overlay \u2014 HexForge Companion",
   "scripts": {
     "dev": "vite",
