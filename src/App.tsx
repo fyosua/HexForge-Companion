@@ -10,7 +10,7 @@ import { InGameIndicator } from "./components/InGameIndicator";
 import { LeaderboardDisplay } from "./components/LeaderboardDisplay";
 import { PlatformStatus } from "./components/PlatformStatus";
 import { PinnedWidget } from "./components/PinnedWidget";
-import { TftConnectionBadge, useTftWatcher } from "./hooks/useTftWatcher";
+import { useTftWatcher, useWindowLabel } from "./hooks/useTftWatcher";
 import "./App.css";
 
 interface PlayerInfo {
@@ -56,8 +56,21 @@ function App() {
   const [pinned, setPinned] = useState(false);
   const [pinnedRank, setPinnedRank] = useState("");
   const [pinnedInGame, setPinnedInGame] = useState(false);
+  const [apiMode, setApiMode] = useState("---");
+  const [dbPath, setDbPath] = useState("---");
+
   const { state: tftState } = useTftWatcher();
+  const windowLabel = useWindowLabel();
   const updateInfo = useAppUpdater();
+  const isOverlay = windowLabel === "overlay";
+  const tftLoading = tftState === "searching";
+
+  // Fetch API mode + DB path on mount (dashboard only)
+  useEffect(() => {
+    if (!inTauri) return;
+    tauriInvoke<string>("get_api_mode").then(setApiMode).catch(() => {});
+    tauriInvoke<string>("get_db_path").then(setDbPath).catch(() => {});
+  }, [inTauri]);
 
   // Listen for clear-puuid event — reset player state after 30s detach
   useEffect(() => {
@@ -160,8 +173,174 @@ function App() {
     }).catch(() => {});
   };
 
+  const handleLaunchOverlay = () => {
+    tauriInvoke("show_overlay");
+  };
+
+  const handleBackToDashboard = () => {
+    tauriInvoke("show_dashboard");
+  };
+
+  // ── Render helpers ────────────────────────────────────
+
+  /** Dashboard TFT status banner */
+  function TftStatusBanner() {
+    if (tftLoading) {
+      return (
+        <div className="hex-tft-banner hex-tft-loading">
+          <div className="hex-loading-pulse" style={{ width: 200, height: 32 }} />
+        </div>
+      );
+    }
+    if (tftState === "attached") {
+      return (
+        <div className="hex-tft-banner hex-tft-attached">
+          <div className="hex-tft-banner-content">
+            <span className="hex-tft-icon">🟢</span>
+            <span className="hex-tft-text">TFT Detected — Ready to Overlay</span>
+            <button className="hex-launch-overlay-btn" onClick={handleLaunchOverlay}>
+              🚀 Launch Overlay
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="hex-tft-banner hex-tft-waiting">
+        <div className="hex-tft-banner-content">
+          <span className="hex-tft-icon">🎮</span>
+          <span className="hex-tft-text">Waiting for TFT...</span>
+          <span className="hex-tft-sub">Launch Teamfight Tactics to enable the overlay</span>
+        </div>
+      </div>
+    );
+  }
+
+  /** Dashboard header with mode + DB path */
+  function DashboardHeader() {
+    return (
+      <header className="hex-header">
+        <div className="hex-header-left">
+          <h1>HexForge Companion</h1>
+          {inTauri && (
+            <span className="hex-header-mode">
+              <span className="hex-header-label">Mode:</span> {apiMode}
+            </span>
+          )}
+        </div>
+        {inTauri && (
+          <div className="hex-header-right" title={dbPath}>
+            <span className="hex-header-db">
+              📁 {dbPath.split("/").pop()}
+            </span>
+          </div>
+        )}
+      </header>
+    );
+  }
+
+  /** Overlay "Back to Dashboard" button (small, top-right, visible on hover) */
+  function OverlayBackButton() {
+    const [hovered, setHovered] = useState(false);
+    return (
+      <div
+        className={`hex-overlay-topbar ${hovered ? "hex-overlay-topbar-visible" : ""}`}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        <button className="hex-back-to-dashboard-btn" onClick={handleBackToDashboard}>
+          ← Back to Dashboard
+        </button>
+      </div>
+    );
+  }
+
+  /** Overlay idle state — shown when no player is searched */
+  function OverlayIdleState() {
+    return (
+      <div className="hex-overlay-idle">
+        <div className="hex-overlay-idle-icon">🔍</div>
+        <div className="hex-overlay-idle-text">Search a player to begin</div>
+        <div className="hex-overlay-idle-hint">
+          Go to the Dashboard to search for a Riot ID
+        </div>
+      </div>
+    );
+  }
+
+  // ── Main render ───────────────────────────────────────
+
+  // ── OVERLAY VIEW ──────────────────────────────────────
+  if (isOverlay) {
+    return (
+      <div className="app-container overlay-view">
+        <OverlayBackButton />
+
+        {pinned && player && (
+          <PinnedWidget
+            data={player}
+            rankLabel={pinnedRank}
+            inGame={pinnedInGame}
+            onUnpin={() => setPinned(false)}
+          />
+        )}
+
+        <main className="hex-main-overlay">
+          {player ? (
+            <div className="hex-dashboard overlay-dashboard">
+              <div className="hex-profile-header">
+                <div className="hex-profile-name">
+                  {player.game_name}#{player.tag_line}
+                  <span className="hex-profile-level">Lv.{player.summoner_level}</span>
+                </div>
+                <button
+                  className="hex-pin-btn"
+                  onClick={handlePin}
+                  title={pinned ? "Unpin" : "Pin as compact widget"}
+                >
+                  {pinned ? "📌 Unpin" : "📌 Pin"}
+                </button>
+              </div>
+
+              <InGameIndicator />
+              <PlatformStatus />
+              <LeaderboardDisplay />
+              <RankDisplay key={`rank-${refreshCounter}`} />
+              <PlayerStats key={`stats-${refreshCounter}`} />
+
+              <div className="hex-refresh-bar">
+                <button
+                  className="hex-refresh-btn"
+                  onClick={handleRefreshMatches}
+                  disabled={refreshLoading}
+                >
+                  {refreshLoading ? (
+                    <span className="hex-soft-refresh">
+                      <span className="hex-spinner" />
+                      Syncing...
+                    </span>
+                  ) : (
+                    "Refresh Matches"
+                  )}
+                </button>
+              </div>
+
+              <MatchHistory key={`history-${refreshCounter}`} />
+            </div>
+          ) : (
+            <OverlayIdleState />
+          )}
+        </main>
+
+        <LegalFooter />
+        <UpdateBadge update={updateInfo} />
+      </div>
+    );
+  }
+
+  // ── DASHBOARD VIEW ────────────────────────────────────
   return (
-    <div className="app-container">
+    <div className="app-container dashboard-view">
       {!inTauri && (
         <div className="hex-browser-banner">
           <span>⚡ Browser preview — mock API on port 1421.</span>
@@ -178,14 +357,15 @@ function App() {
         />
       )}
 
-      {!pinned && (
-        <header className="hex-header">
-          <h1>HexForge Companion</h1>
-        </header>
-      )}
+      {!pinned && <DashboardHeader />}
 
       <main className="hex-main" style={pinned ? { paddingTop: 8 } : undefined}>
-        <DisplayModeWarning />
+        <TftStatusBanner />
+
+        {tftState !== "attached" && !pinned && (
+          <DisplayModeWarning />
+        )}
+
         <PlayerSearch onPlayerResolved={handlePlayerResolved} onError={setError} />
         {error && <div className="hex-error">{error}</div>}
 
@@ -196,18 +376,19 @@ function App() {
                 {player.game_name}#{player.tag_line}
                 <span className="hex-profile-level">Lv.{player.summoner_level}</span>
               </div>
-              <button
-                className="hex-pin-btn"
-                onClick={handlePin}
-                title="Pin as compact widget"
-              >
-                📌 Pin
-              </button>
+              {tftState === "attached" && (
+                <button
+                  className="hex-pin-btn"
+                  onClick={handlePin}
+                  title="Pin as overlay widget"
+                >
+                  📌 Pin Overlay
+                </button>
+              )}
             </div>
 
             <InGameIndicator />
             <PlatformStatus />
-            <TftConnectionBadge state={tftState} />
             <LeaderboardDisplay />
             <RankDisplay key={`rank-${refreshCounter}`} />
             <PlayerStats key={`stats-${refreshCounter}`} />

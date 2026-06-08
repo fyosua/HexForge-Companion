@@ -401,6 +401,36 @@ pub async fn get_active_game_status(
 
 /// ── OVERLAY ──────────────────────────────────────────────
 
+/// Show overlay, hide dashboard — called from frontend "Launch Overlay" button
+#[tauri::command]
+pub fn show_overlay(app_handle: tauri::AppHandle) {
+    crate::show_overlay(&app_handle);
+}
+
+/// Show dashboard, hide overlay — called from overlay "Back to Dashboard" button
+#[tauri::command]
+pub fn show_dashboard(app_handle: tauri::AppHandle) {
+    crate::show_dashboard(&app_handle);
+}
+
+/// Get the current API mode string for display in the dashboard header
+#[tauri::command]
+pub fn get_api_mode(state: State<'_, AppState>) -> Result<String, String> {
+    Ok(match &state.api_mode {
+        crate::api::ApiMode::Mock => "Mock".to_string(),
+        crate::api::ApiMode::Direct { region, platform, .. } =>
+            format!("Direct ({} / {})", region, platform),
+        crate::api::ApiMode::Proxy { proxy_base } =>
+            format!("Proxy ({})", proxy_base),
+    })
+}
+
+/// Get the database path string for display in the dashboard header
+#[tauri::command]
+pub fn get_db_path(_state: State<'_, AppState>) -> Result<String, String> {
+    Ok(crate::get_db_path_string())
+}
+
 /// Enable cursor interactivity — called when mouse enters a HUD element.
 #[tauri::command]
 pub fn hud_bounds_enter(window: tauri::Window) {

@@ -18,6 +18,17 @@ pub struct AppState {
     pub watcher_running: Arc<AtomicBool>,
 }
 
+/// Return the database path as a display string.
+pub fn get_db_path_string() -> String {
+    dirs_data_local()
+        .unwrap_or_else(|| std::path::PathBuf::from("."))
+        .join("HexForge")
+        .join("db")
+        .join("storage.db")
+        .display()
+        .to_string()
+}
+
 /// Print a formatted startup banner with version, mode, and paths.
 fn print_startup_banner(api_mode: &api::ApiMode, db_path: &std::path::Path) {
     let version = env!("CARGO_PKG_VERSION");
@@ -200,6 +211,10 @@ pub fn run() {
             commands::get_platform_status,
             commands::get_active_game_status,
             commands::refresh_matches,
+            commands::show_overlay,
+            commands::show_dashboard,
+            commands::get_api_mode,
+            commands::get_db_path,
             commands::hud_bounds_enter,
             commands::hud_bounds_leave,
             commands::request_account_deletion,

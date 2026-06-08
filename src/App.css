@@ -499,6 +499,202 @@ body {
   margin-top: 2px;
 }
 
+/* ══════════════════════════════════════════════════════════
+   TFT Status Banner (Dashboard)
+   ══════════════════════════════════════════════════════════ */
+.hex-tft-banner {
+  margin-bottom: 8px;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.hex-tft-banner-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.hex-tft-icon {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.hex-tft-text {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.hex-tft-sub {
+  font-size: 11px;
+  color: #888;
+  margin-top: 2px;
+}
+
+/* Waiting for TFT */
+.hex-tft-waiting {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.hex-tft-waiting .hex-tft-text {
+  color: #888;
+}
+
+/* TFT Detected */
+.hex-tft-attached {
+  background: rgba(68, 255, 68, 0.06);
+  border: 1px solid rgba(68, 255, 68, 0.2);
+}
+.hex-tft-attached .hex-tft-text {
+  color: #44ff44;
+}
+
+/* Loading skeleton */
+.hex-tft-loading {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  display: flex;
+  justify-content: center;
+}
+
+/* Launch Overlay button */
+.hex-launch-overlay-btn {
+  background: linear-gradient(135deg, #44ff44 0%, #22cc22 100%);
+  color: #000;
+  border: none;
+  padding: 10px 28px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 0 20px rgba(68, 255, 68, 0.3);
+}
+.hex-launch-overlay-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 30px rgba(68, 255, 68, 0.5);
+}
+
+/* ══════════════════════════════════════════════════════════
+   Dashboard Header (mode + DB path)
+   ══════════════════════════════════════════════════════════ */
+.hex-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hex-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hex-header-right {
+  font-size: 10px;
+  color: #555;
+  cursor: help;
+}
+
+.hex-header-mode {
+  font-size: 10px;
+  color: #888;
+}
+
+.hex-header-label {
+  color: #555;
+}
+
+.hex-header-db {
+  font-size: 10px;
+  color: #555;
+}
+
+/* ══════════════════════════════════════════════════════════
+   Overlay View
+   ══════════════════════════════════════════════════════════ */
+.overlay-view .hex-main-overlay {
+  padding-top: 8px;
+  padding-left: 12px;
+  padding-right: 12px;
+  height: calc(100vh - 60px);
+  overflow-y: auto;
+}
+
+/* Back to Dashboard button (hidden by default, shows on hover) */
+.hex-overlay-topbar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 99999;
+  padding: 6px 10px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.hex-overlay-topbar-visible {
+  opacity: 1;
+}
+
+.hex-back-to-dashboard-btn {
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #aaa;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: color 0.15s, background 0.15s;
+}
+.hex-back-to-dashboard-btn:hover {
+  color: #f0f0f0;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+/* Overlay idle state (no player searched) */
+.hex-overlay-idle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: calc(100vh - 80px);
+  gap: 12px;
+  text-align: center;
+}
+
+.hex-overlay-idle-icon {
+  font-size: 48px;
+  opacity: 0.6;
+}
+
+.hex-overlay-idle-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: #888;
+}
+
+.hex-overlay-idle-hint {
+  font-size: 12px;
+  color: #555;
+  max-width: 300px;
+}
+
+/* Override for dashboard view — solid background */
+.dashboard-view {
+  background: #0d0d1a !important;
+}
+.dashboard-view body {
+  background: #0d0d1a !important;
+}
+
+/* Overlay dashboard variant */
+.overlay-dashboard {
+  gap: 2px;
+}
+
 /* ── Scrollbar ─────────────────────────────────────────── */
 .hex-main::-webkit-scrollbar {
   width: 4px;

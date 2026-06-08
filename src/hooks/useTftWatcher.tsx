@@ -19,6 +19,32 @@ interface TftStatePayload {
   };
 }
 
+// —— Window label detection ———————————————————————————————————
+
+/**
+ * Detect which Tauri window we're running in.
+ * Returns "dashboard", "overlay", or "unknown" (browser preview / error).
+ */
+export function useWindowLabel(): string {
+  const [label, setLabel] = useState("unknown");
+
+  useEffect(() => {
+    async function detect() {
+      try {
+        const { getCurrentWindow } = await import("@tauri-apps/api/window");
+        const win = getCurrentWindow();
+        setLabel(win.label);
+      } catch {
+        // Not in Tauri — browser preview mode
+        setLabel("unknown");
+      }
+    }
+    detect();
+  }, []);
+
+  return label;
+}
+
 // —— Overlay window manager ———————————————————————————————————
 
 /**
@@ -32,13 +58,8 @@ async function snapToGameWindow(info: TftWindowInfo): Promise<void> {
 
     const win = getCurrentWindow();
 
-    // Move to match TFT window position
     await win.setPosition(new LogicalPosition(info.x, info.y));
-
-    // Resize to match TFT window dimensions
     await win.setSize(new LogicalSize(info.width, info.height));
-
-    // Ensure visible
     await win.show();
   } catch {
     // Not in Tauri or API unavailable — silent
@@ -64,7 +85,7 @@ async function hideOverlay(): Promise<void> {
  * Hook that listens for TFT process attach/detach events from the
  * Rust backend's process watcher thread.
  *
- * On mount, starts listening for \`tft-attached\` and \`tft-detached\`
+ * On mount, starts listening for `tft-attached` and `tft-detached`
  * events. When attached with geometry info, automatically resizes
  * and repositions the Tauri overlay to match the TFT game window.
  * When detached, hides the overlay.
