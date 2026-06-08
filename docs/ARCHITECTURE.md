@@ -2,224 +2,284 @@
 
 ## Overview
 
-HexForge Companion is a **Tauri v2** desktop application that provides a lightweight, transparent overlay for Teamfight Tactics. The Rust backend handles all data ingestion, local caching, and Riot API communication while the React frontend renders the HUD interface. A Python mock proxy enables browser-based development without Tauri.
+HexForge Companion is a **Tauri v2** desktop application that provides a lightweight, transparent overlay for Teamfight Tactics. The Rust backend handles all data ingestion, local caching, Riot API communication, and TFT process detection while the React frontend renders the overlay UI.
 
-## Core Architecture
+Version **0.5.0** — pre-release / early access.
+
+---
+
+## Core Principles
+
+1. **Memory-safe Rust** — no unsafe code (except Win32 FFI) in the backend
+2. **Riot compliance** — blocked augment/legend data, no live scouting, legal boilerplate on every view
+3. **Overlay-first UX** — transparent window, pass-through mouse, auto-attach to TFT process
+4. **Zero config** — mock mode out of the box, optional API key for live data
+5. **Offline-capable** — SQLite cache with WAL mode, full feature set without API key
+
+---
+
+## Layer Diagram
 
 ```
-┌──────────────────────────────────────────────────────────────────────┐
-│                          Tauri v2 Shell                              │
-│  ┌──────────────────────────┐    ┌────────────────────────────────┐  │
-│  │     Rust Backend          │    │     React Frontend             │  │
-│  │                           │    │                                │  │
-│  │  ┌─────────────────────┐  │    │  ┌──────────────────────────┐ │  │
-│  │  │    RiotApiClient     │──┼────┼──│  PlayerSearch.tsx         │ │  │
-│  │  │  (Mock / Direct /    │  │    │  └──────────────────────────┘ │  │
-│  │  │   Proxy)             │  │    │  ┌──────────────────────────┐ │  │
-│  │  └───────┬─────────────┘  │    │  │  MatchHistory.tsx          │ │  │
-│  │          │                │    │  └──────────────────────────┘ │  │
-│  │  ┌───────▼─────────────┐  │    │  ┌──────────────────────────┐ │  │
-│  │  │  SQLite Database     │  │    │  │  PlayerStats.tsx          │ │  │
-│  │  │  (WAL mode,          │  │    │  └──────────────────────────┘ │  │
-│  │  │   ~/.local/share/    │  │    │  ┌──────────────────────────┐ │  │
-│  │  │   HexForge/db/)      │  │    │  │  RankDisplay.tsx          │ │  │
-│  │  └──────────────────────┘  │    │  └──────────────────────────┘ │  │
-│  │                           │    │  ┌──────────────────────────┐ │  │
-│  │  ┌─────────────────────┐  │    │  │  InGameIndicator.tsx      │ │  │
-│  │  │  Overlay             │  │    │  └──────────────────────────┘ │  │
-│  │  │  (cursor passthrough │  │    │  ┌──────────────────────────┐ │  │
-│  │  │   via                │  │    │  │  LeaderboardDisplay.tsx   │ │  │
-│  │  │   set_ignore_cursor  │  │    │  └──────────────────────────┘ │  │
-│  │  │   _events)           │  │    │  ┌──────────────────────────┐ │  │
-│  │  └──────────────────────┘  │    │  │  PlatformStatus.tsx       │ │  │
-│  │                           │    │  └──────────────────────────┘ │  │
-│  └──────────────────────────┘    │  ┌──────────────────────────┐ │  │
-│                                  │  │  PinnedWidget.tsx         │ │  │
-│                                  │  └──────────────────────────┘ │  │
-│                                  │  ┌──────────────────────────┐ │  │
-│                                  │  │  DisplayModeWarning.tsx   │ │  │
-│                                  │  └──────────────────────────┘ │  │
-│                                  │  ┌──────────────────────────┐ │  │
-│                                  │  │  LegalFooter.tsx          │ │  │
-│                                  │  └──────────────────────────┘ │  │
-│                                  └────────────────────────────────┘  │
-└──────────────────────────────────────────────────────────────────────┘
-         │
-         ▼
-┌───────────────────────────────────────────────────────────────────────────────┐
-│                          Riot Games API (v1/v5)                               │
-│                                                                               │
-│  ACCOUNT-V1:  /riot/account/v1/accounts/by-riot-id/{name}/{tag}              │
-│  ACCOUNT-V1:  /riot/account/v1/active-shards/by-game/{game}/by-puuid/{puuid} │
-│  SUMMONER-V1: /tft/summoner/v1/summoners/by-puuid/{platform}/{puuid}         │
-│  MATCH-V1:    /tft/match/v1/matches/by-puuid/{puuid}/ids                     │
-│  MATCH-V1:    /tft/match/v1/matches/{match_id}                                │
-│  LEAGUE-V1:   /tft/league/v1/entries/by-puuid/{puuid}                        │
-│  LEAGUE-V1:   /tft/league/v1/challenger                                       │
-│  LEAGUE-V1:   /tft/league/v1/grandmaster                                      │
-│  LEAGUE-V1:   /tft/league/v1/master                                           │
-│  SPECTATOR-V5:/tft/spectator/v5/active-games/by-puuid/{puuid}                │
-│  STATUS-V1:   /tft/status/v1/platform-data                                    │
-└───────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│  WINDOW: Tauri WebView2 (transparent, frameless, AOT)    │
+│  ┌────────────────────────────────────────────────────┐  │
+│  │  BREACT FRONTEND                                    │  │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐           │  │
+│  │  │App.tsx   │ │Dashboard │ │Pinned    │            │  │
+│  │  │(router)  │ │components│ │Widget    │            │  │
+│  │  └────┬─────┘ └──────────┘ └──────────┘           │  │
+│  │       │ useTftWatcher hook                         │  │
+│  │       │   → auto-resize on tft-attached           │  │
+│  │       │   → auto-hide on tft-detached             │  │
+│  │       │ useApi hook                                │  │
+│  │       │   → invoke() or proxy fetch               │  │
+│  └───────┼────────────────────────────────────────────┘  │
+└──────────┼───────────────────────────────────────────────┘
+           │ Tauri IPC (invoke / events)
+┌──────────┼───────────────────────────────────────────────┐
+│  RUST BACKEND                                            │
+│  ┌───────┴──────────────────────────────────────────┐    │
+│  │  lib.rs (AppState + setup)                       │    │
+│  │  ├── TrayIconBuilder (show/hide/quit)            │    │
+│  │  ├── process_watcher::spawn_watcher()            │    │
+│  │  └── commands.rs (14 invoke handlers)            │    │
+│  ├──────────────────────────────────────────────────┤    │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌───────────┐│    │
+│  │  │ Process     │  │ Riot API    │  │ SQLite    ││    │
+│  │  │ Watcher     │  │ Client      │  │ (WAL)     ││    │
+│  │  │ (2s poll)   │  │ 3 modes     │  │ cache     ││    │
+│  │  └─────────────┘  └─────────────┘  └───────────┘│    │
+│  └──────────────────────────────────────────────────┘    │
+└──────────────────────────────────────────────────────────┘
 ```
 
-## Window Configuration (tauri.conf.json)
+---
 
-The overlay window is configured as:
+## Component Tree
 
-| Property | Value | Purpose |
-|----------|-------|---------|
-| `decorations` | `false` | No title bar — pure overlay |
-| `transparent` | `true` | Background sees through to game |
-| `alwaysOnTop` | `true` | Stays above TFT client |
-| `skipTaskbar` | `true` | Doesn't appear as separate task |
-| `focus` | `false` | Never steals focus from game |
-| `resizable` | `true` | Can be resized for different resolutions |
+### Rust Backend
 
-When the mouse is not over a HUD element (`<main class="hex-hud-interactive">`), cursor events pass through to the game via `set_ignore_cursor_events(true)`. The `overlay.rs` module handles this with two functions:
-- `set_passthrough(window, enabled)` — wraps `window.set_ignore_cursor_events()`
-- `init_overlay(window)` — positions overlay on primary monitor at full resolution
+| Module | File | Responsibility |
+|--------|------|---------------|
+| `lib.rs` | `src-tauri/src/lib.rs` | App entry, state, tray icon, watcher lifecycle |
+| `main.rs` | `src-tauri/src/main.rs` | `windows_subsystem = "windows"`, calls `lib::run()` |
+| `api.rs` | `src-tauri/src/api.rs` | Riot API client (3 modes), rate limiting, DTOs |
+| `commands.rs` | `src-tauri/src/commands.rs` | 14 Tauri IPC `#[command]` handlers |
+| `db.rs` | `src-tauri/src/db.rs` | SQLite init (WAL pragma), schema, migrations |
+| `overlay.rs` | `src-tauri/src/overlay.rs` | hit-test / bounds helpers for pass-through |
+| `process_watcher.rs` | `src-tauri/src/process_watcher.rs` | TFT window detection, event emission |
 
-## Frontend Components (10)
+### React Frontend
 
 | Component | File | Purpose |
 |-----------|------|---------|
-| `PlayerSearch` | `PlayerSearch.tsx` | Riot ID input → resolve_player → sets active PUUID |
-| `MatchHistory` | `MatchHistory.tsx` | Table of recent matches from local DB |
-| `PlayerStats` | `PlayerStats.tsx` | Aggregate placement stats (win rate, avg placement, top4) |
-| `RankDisplay` | `RankDisplay.tsx` | TFT rank, tier, LP, wins/losses per queue |
-| `InGameIndicator` | `InGameIndicator.tsx` | Green/red dot showing whether player is in a live game |
-| `LeaderboardDisplay` | `LeaderboardDisplay.tsx` | Challenger/Grandmaster/Master standings table |
-| `PlatformStatus` | `PlatformStatus.tsx` | Maintenance and incident alerts per platform |
-| `PinnedWidget` | `PinnedWidget.tsx` | Compact mini-dashboard pinned during gameplay |
-| `DisplayModeWarning` | `DisplayModeWarning.tsx` | Fullscreen warning for overlay mode |
-| `LegalFooter` | `LegalFooter.tsx` | Riot Games disclaimer on every screen |
+| App | `src/App.tsx` | Dashboard layout, state management, refresh logic |
+| PlayerSearch | `src/components/PlayerSearch.tsx` | Summoner search input + Riot ID resolution |
+| MatchHistory | `src/components/MatchHistory.tsx` | Recent match list with placements/comps |
+| PlayerStats | `src/components/PlayerStats.tsx` | Aggregated stats from recent matches |
+| RankDisplay | `src/components/RankDisplay.tsx` | Tier/LP/win-loss display |
+| InGameIndicator | `src/components/InGameIndicator.tsx` | Live game status (in queue / in game) |
+| LeaderboardDisplay | `src/components/LeaderboardDisplay.tsx` | Challenger/GM/Master ladder |
+| PlatformStatus | `src/components/PlatformStatus.tsx` | Server health indicators |
+| PinnedWidget | `src/components/PinnedWidget.tsx` | Compact overlay mode (draggable, top-right) |
+| LegalFooter | `src/components/LegalFooter.tsx` | Riot Games legal boilerplate |
+| DisplayModeWarning | `src/components/DisplayModeWarning.tsx` | Browser-vs-Tauri detection banner |
 
-## API Client Modes
+### Hooks
 
-### Mock Mode
-- Reads from `src-tauri/mock/*.json` files (15 files covering account, summoner, match, league, spectator, status)
-- Requires `USE_MOCK=true` in `.env` (or no API key set)
-- Returns realistic sample match data
-- Also accessible via `proxy.py` for browser preview
+| Hook | File | Purpose |
+|------|------|---------|
+| `useApi` | `src/hooks/useApi.ts` | Shared fetch with `fetchIdRef` + `AbortController` |
+| `useTftWatcher` | `src/hooks/useTftWatcher.tsx` | Listens for attach/detach events, auto-resizes overlay |
 
-### Direct Mode  
-- Passes `X-Riot-Token` header directly to Riot API
-- Requires `RGAPI_KEY` in `.env`
-- Uses `RIOT_REGION` (americas/asia/europe/sea) and `RIOT_PLATFORM` (kr/na1/etc.)
-- Good for development and personal keys
+---
 
-### Proxy Mode
-- Routes all requests through a backend proxy
-- Requires `RIOT_PROXY_URL` in `.env`
-- API key lives on the backend — never in the binary
-- Required for production deployment with RSO
-- Proxy endpoints use format: `{proxy_base}/api/riot/v1/...`
+## Data Flow
 
-## Mock API Proxy (proxy.py)
+### Startup Sequence
 
-A standalone Python HTTP server on port 1421 that serves mock responses for all IPC commands. Used for browser preview when Tauri is not available.
-
-**Usage:**
-```bash
-python3 proxy.py
-# → [HexForge Proxy] Mock API running on http://0.0.0.0:1421
+```
+1. main.rs → lib::run()
+2. Load .env (project root + data dir)
+3. init_database() → SQLite WAL pragma, create tables
+4. Print startup banner (version, PID, mode, DB path)
+5. tauri::Builder::default()
+   a. setup():
+      - spawn_watcher(handle, 2000) → polling thread
+      - setup_tray(app) → tray icon + menu
+   b. manage(AppState) → shared state
+   c. generate_handler!() → register 14 commands
+6. WebView2 loads dist/index.html
+7. React mounts → useEffect detects Tauri vs browser
+8. useTftWatcher listens for tft-attached / tft-detached
+9. Window visible → user interacts
 ```
 
-The frontend auto-detects Tauri presence. When running in browser (`!isTauri()`), all `invoke()` calls are proxied through `http://raspberrypi.local:1421/api/{command}`.
+### TFT Auto-Attach Flow
+
+```
+                     TFT launches
+                         │
+                         ▼
+    ┌──────────────────────────────┐
+    │ process_watcher thread (2s)  │
+    │ Win32 FindWindowW("Riot...") │
+    │ GetWindowRect → {x,y,w,h}   │
+    │ STATE CHANGE detected        │
+    │ app_handle.emit("tft-        │
+    │   attached", payload)        │
+    └──────────────┬───────────────┘
+                   │ Tauri event
+                   ▼
+    ┌──────────────────────────────┐
+    │ useTftWatcher hook           │
+    │ handleAttached().callbacks   │
+    │                              │
+    │ snapToGameWindow(info):     │
+    │ 1. getCurrentWindow()       │
+    │ 2. setPosition(x, y)        │
+    │ 3. setSize(width, height)   │
+    │ 4. win.show()               │
+    └──────────────┬───────────────┘
+                   │ Tauri API call
+                   ▼
+    ┌──────────────────────────────┐
+    │ Tauri window resizes +       │
+    │ repositions to match game    │
+    │ Overlay appears              │
+    └──────────────────────────────┘
+```
+
+### TFT Detach Flow
+
+```
+                    TFT closes
+                         │
+                         ▼
+    ┌──────────────────────────────┐
+    │ process_watcher thread       │
+    │ FindWindowW returns None     │
+    │ STATE CHANGE: attached→None  │
+    │ app_handle.emit("tft-        │
+    │   detached", payload)        │
+    └──────────────┬───────────────┘
+                   │
+                   ▼
+    ┌──────────────────────────────┐
+    │ useTftWatcher hook           │
+    │ handleDetached()             │
+    │ setState("detached")         │
+    │ hideOverlay():               │
+    │   getCurrentWindow().hide()  │
+    └──────────────┬───────────────┘
+                   │
+                   ▼
+          Overlay hidden
+     App stays in system tray
+     Tray double-click to restore
+```
+
+### User Search Flow
+
+```
+User types "Player#TAG"
+         │
+         ▼
+┌──────────────────────┐
+│ 1. resolve_player()   │
+│    invoke("resolve-   │
+│    player", name,tag) │
+└──────────┬───────────┘
+           │ IPC call
+           ▼
+┌──────────────────────┐
+│ 2. Rust backend      │
+│    ┌─ Mock mode:     │
+│    │  load mock JSON │
+│    ├─ Direct mode:   │
+│    │  Riot API v1    │
+│    │  GET /riot/     │
+│    │  account/v1/... │
+│    └─ Proxy mode:    │
+│       forward to     │
+│       proxy.py       │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│ 3. Cache in SQLite   │
+│    INSERT OR REPLACE │
+│    INTO players(...) │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│ 4. Frontend renders  │
+│    Rank, Matches,    │
+│    Stats, Live game  │
+│    status            │
+└──────────────────────┘
+```
+
+---
+
+## API Architecture
+
+### Three API Modes
+
+| Mode | Config | Behavior | Use Case |
+|------|--------|----------|----------|
+| **Mock** | No `.env` or `USE_MOCK=true` | Reads local JSON files | Development, demo, offline |
+| **Direct** | `RGAPI_KEY=***` | Calls Riot API directly | Production with user key |
+| **Proxy** | `RIOT_PROXY_URL=...` | Routes through backend | Browser preview, load balancing |
+
+### Rate Limiting
+
+- **Mock mode**: No limits
+- **Direct mode**: Respects Riot's limits (20 req/s, 100 req/2 min)
+- **Proxy mode**: Configurable via proxy middleware
+
+---
 
 ## Database Schema
 
-```
-Location: ~/.local/share/HexForge/db/storage.db
-Journal:  WAL (Write-Ahead Logging)
-```
+### Table: `players`
 
-### Tables
+| Column | Type | Description |
+|--------|------|-------------|
+| puuid | TEXT PK | Riot PUUID |
+| game_name | TEXT | Riot ID name |
+| tag_line | TEXT | Riot ID tag |
+| summoner_level | INTEGER | Account level |
+| last_updated | TEXT ISO8601 | Cache timestamp |
 
-**players** — one row per resolved Riot ID:
-```
-puuid TEXT PRIMARY KEY
-game_name TEXT NOT NULL
-tag_line TEXT NOT NULL
-summoner_id TEXT
-summoner_level INTEGER DEFAULT 0
-profile_icon_id INTEGER DEFAULT 0
-created_at TEXT DEFAULT datetime('now')
-updated_at TEXT DEFAULT datetime('now')
-```
+### Table: `matches`
 
-**matches** — one row per participant per match:
-```
-match_id TEXT PRIMARY KEY
-puuid TEXT NOT NULL → players(puuid) ON DELETE CASCADE
-game_datetime INTEGER NOT NULL
-game_length REAL
-placement INTEGER
-game_version TEXT
-tft_set_canonical TEXT
-queue_id INTEGER
-companion TEXT
-traits TEXT
-units TEXT
-augments TEXT
-total_damage_to_players INTEGER
-last_round INTEGER
-level INTEGER
-player_level INTEGER
-created_at TEXT DEFAULT datetime('now')
-```
+| Column | Type | Description |
+|--------|------|-------------|
+| match_id | TEXT PK | Match UUID |
+| puuid | TEXT FK | Owner's PUUID |
+| data | TEXT JSON | Full match payload |
+| placement | INTEGER | Final placement (1-8) |
+| played_at | TEXT ISO8601 | Match timestamp |
+| cached_at | TEXT ISO8601 | Cache timestamp |
 
-**WAL pragmas:**
-```sql
-PRAGMA journal_mode = WAL;
-PRAGMA synchronous = NORMAL;
-PRAGMA foreign_keys = ON;
-PRAGMA cache_size = -8192;
-PRAGMA busy_timeout = 5000;
-PRAGMA temp_store = MEMORY;
-```
+---
 
-## IPC Commands (14 Total)
+## Security & Compliance
 
-| Command | Direction | Params | Description |
-|---------|-----------|--------|-------------|
-| `resolve_player` | FE → BE | gameName, tagLine, platform | Riot ID → PUUID + summoner info |
-| `get_match_history` | FE → BE | limit | Recent matches from local DB |
-| `get_player_stats` | FE → BE | none | Aggregate placement stats |
-| `get_player_rank` | FE → BE | none | TFT ranked league entries |
-| `get_player_region` | FE → BE | none | Active region for linked player |
-| `get_challenger_standings` | FE → BE | none | Challenger league standings |
-| `get_grandmaster_standings` | FE → BE | none | Grandmaster league standings |
-| `get_master_standings` | FE → BE | none | Master league standings |
-| `get_platform_status` | FE → BE | none | Platform maintenance/incidents |
-| `get_active_game_status` | FE → BE | none | In-game check (compliance-safe) |
-| `refresh_matches` | FE → BE | count | Fetch + cache new matches from API |
-| `hud_bounds_enter` | FE → BE | none | Enable cursor on Hover |
-| `hud_bounds_leave` | FE → BE | none | Pass cursor through |
-| `request_account_deletion` | FE → BE | none | GDPR data purge |
+- **CSP**: locked to self + Riot CDN images + Riot API domains
+- **Env isolation**: API key never hardcoded, loaded from `.env` only
+- **No augment/legend data**: blocked at `api.rs` — `get_augment_win_rates()` returns `Err`
+- **Legal footer**: rendered on every dashboard view
+- **Process isolation**: watcher thread uses `FindWindowW` only — no memory scanning
 
-## Cross-Compilation
+## Build Targets
 
-Windows x86_64 binaries can be built from Linux using MinGW cross-compilation.
-
-**Toolchain:**
-- `x86_64-w64-mingw32-gcc` (from `gcc-mingw-w64-x86-64`)
-- Rust target: `x86_64-pc-windows-gnu`
-- Linker configured in `.cargo/config.toml`
-
-**Build:**
-```bash
-cargo build --target x86_64-pc-windows-gnu
-```
-
-**Output:** `src-tauri/target/x86_64-pc-windows-gnu/debug/hexforge-companion.exe`
-
-## Startup Sequence
-
-1. **lib.rs::run()** — loads `.env` from project root or app data dir
-2. **ApiMode::from_env()** — auto-detects Mock/Direct/Proxy
-3. **db::init_database()** — creates WAL database with schema
-4. **Tauri builder** — manages AppState, registers all 14 IPC commands
-5. **overlay::init_overlay()** — positions transparent window, enables cursor passthrough
-6. **React mount** — components render, `useEffect` detects Tauri vs browser, attaches mouse event listeners
+| Target | Config | Installer |
+|--------|--------|-----------|
+| Windows x86_64 | `cargo build --target x86_64-pc-windows-gnu --release` | NSIS .exe (currentUser, license page) |
+| Linux x86_64 | `cargo build --release` | .deb + .AppImage |
+| macOS arm64 | `cargo build --release` | .dmg (minimum 12.0) |
+| Raspberry Pi (ARM64) | `cargo build --release` | Dev target (no production bundle) |

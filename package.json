@@ -1,8 +1,8 @@
 {
   "name": "hexforge-companion",
   "private": true,
-  "version": "0.1.0",
-  "description": "TFT desktop companion overlay — HexForge Companion",
+  "version": "0.5.0",
+  "description": "TFT desktop companion overlay \u2014 HexForge Companion",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

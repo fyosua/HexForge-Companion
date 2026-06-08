@@ -1,4 +1,4 @@
-# HexForge Companion — Riot Games Compliance Audit
+# HexForge Companion v0.5.0 — Riot Games Compliance Audit
 
 This document details how HexForge Companion complies with every Riot Games Third-Party Application Policy. It serves as the audit reference for Production API key applications.
 
@@ -106,3 +106,20 @@ This compliance audit document is part of the Production API key submission pack
 - [Riot Games Third-Party Applications Policy](https://developer.riotgames.com/policies.html)
 - [Riot Games Legal Jibber-Jabber](https://www.riotgames.com/en/legal)
 - [Augment and Legend Data Ban](https://developer.riotgames.com/docs/tft#augment-and-legend-data)
+---
+
+## 10. Process Detection Compliance
+
+**Policy**: Application must not scan or modify League of Legends memory, processes, or files beyond standard window detection.
+
+**HexForge Implementation**: The process watcher (`process_watcher.rs`) uses only:
+- `FindWindowW("RiotWindowClass")` — Win32 standard API for window class matching
+- `GetWindowRect()` — standard Win32 window geometry query
+- No memory scanning, no DLL injection, no file system modification
+- Process watcher is **read-only** — it only inspects which windows exist
+
+**Status**: ✅ Compliant — uses standard OS window enumeration, no game process interference.
+
+---
+
+*Compliance audit current as of June 2026. Policy changes may require re-audit. Review [Riot Policies](https://developer.riotgames.com/policies.html) periodically.*
