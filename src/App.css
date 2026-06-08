@@ -1,3 +1,4 @@
+/* ── Reset & Base ─────────────────────────────────────── */
 body {
   background: transparent !important;
   margin: 0;
@@ -11,57 +12,475 @@ body {
   width: 100vw;
   height: 100vh;
   background: transparent;
-  color: #e0e0e0;
+  color: #f0f0f0;
   font-family: 'Segoe UI', system-ui, sans-serif;
   pointer-events: none; /* everything passthrough by default */
 }
 
+/* ── Interactive override ─────────────────────────────── */
 .hex-hud-interactive {
-  pointer-events: auto; /* interactive elements catch clicks */
+  pointer-events: auto;
 }
 
+/* ── Browser mode banner ──────────────────────────────── */
+.hex-browser-banner {
+  background: rgba(18, 18, 30, 0.85);
+  border: 1px solid rgba(200, 168, 78, 0.4);
+  color: #c8a84e;
+  padding: 6px 14px;
+  text-align: center;
+  font-size: 11px;
+  backdrop-filter: blur(6px);
+}
+
+/* ── Header ───────────────────────────────────────────── */
 .hex-header {
   position: fixed;
   top: 0;
   left: 0;
-  padding: 8px 16px;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 6px 14px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   z-index: 100;
 }
 
 .hex-header h1 {
   margin: 0;
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 600;
   color: #c8a84e;
+  letter-spacing: 0.5px;
 }
 
+/* ── Main content ─────────────────────────────────────── */
 .hex-main {
-  padding-top: 48px;
-  padding-left: 16px;
-  padding-right: 16px;
-  height: calc(100vh - 64px);
+  padding-top: 44px;
+  padding-left: 12px;
+  padding-right: 12px;
+  height: calc(100vh - 60px);
   overflow-y: auto;
 }
 
+/* ── Error ────────────────────────────────────────────── */
 .hex-error {
-  background: rgba(220, 50, 50, 0.8);
-  color: white;
-  padding: 8px 12px;
+  background: rgba(200, 50, 50, 0.7);
+  color: #fff;
+  padding: 6px 10px;
   border-radius: 4px;
-  margin: 8px 0;
+  margin: 6px 0;
+  font-size: 11px;
 }
 
+/* ── Dashboard ────────────────────────────────────────── */
+.hex-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ── Profile header ───────────────────────────────────── */
+.hex-profile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.hex-profile-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f0f0f0;
+}
+
+.hex-profile-level {
+  font-size: 11px;
+  font-weight: 400;
+  color: #888;
+  margin-left: 8px;
+}
+
+/* ── Widget (shared card style) ───────────────────────── */
+.hex-widget {
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+
+.hex-widget-header {
+  font-size: 10px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.hex-widget-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ── Stat cards ───────────────────────────────────────── */
+.hex-stat-card {
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(4px);
+  padding: 4px 10px;
+  border-radius: 4px;
+  text-align: center;
+  min-width: 56px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.hex-stat-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #c8a84e;
+  line-height: 1.2;
+}
+
+.hex-stat-label {
+  font-size: 9px;
+  color: #777;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ── Match list ───────────────────────────────────────── */
+.hex-match-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hex-match-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 11px;
+}
+
+.hex-placement-badge {
+  display: inline-block;
+  width: 28px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 10px;
+  color: #000;
+  border-radius: 3px;
+  padding: 1px 0;
+}
+
+.hex-match-version {
+  color: #888;
+  font-size: 10px;
+  min-width: 40px;
+}
+
+.hex-match-time {
+  color: #666;
+  font-size: 10px;
+  margin-left: auto;
+}
+
+/* ── Rank display ─────────────────────────────────────── */
+.hex-rank-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hex-rank-badge {
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid;
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
+.hex-rank-lp {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f0f0f0;
+}
+
+.hex-rank-wr {
+  font-size: 10px;
+  color: #888;
+}
+
+/* ── Inline indicator + pulse dots ────────────────────── */
+.hex-inline-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  padding: 2px 10px;
+}
+
+.hex-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.hex-pulse-green {
+  background: #44ff44;
+  box-shadow: 0 0 6px rgba(68, 255, 68, 0.5);
+  animation: pulse-green 2s infinite;
+}
+
+.hex-pulse-red {
+  background: #ff4444;
+  box-shadow: 0 0 6px rgba(255, 68, 68, 0.5);
+  animation: pulse-red 2s infinite;
+}
+
+.hex-pulse-off {
+  background: #444;
+}
+
+@keyframes pulse-green {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes pulse-red {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ── Leaderboard ──────────────────────────────────────── */
+.hex-leaderboard-tabs {
+  display: flex;
+  gap: 6px;
+}
+
+.hex-lb-tab {
+  background: transparent;
+  border: none;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.hex-lb-tab-active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.hex-lb-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.hex-lb-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 6px;
+  font-size: 10px;
+}
+
+.hex-lb-rank {
+  color: #666;
+  width: 20px;
+}
+
+.hex-lb-lp {
+  font-weight: 700;
+  font-size: 11px;
+  min-width: 40px;
+}
+
+.hex-lb-wr {
+  color: #888;
+  margin-left: auto;
+}
+
+/* ── Refresh bar ──────────────────────────────────────── */
+.hex-refresh-bar {
+  margin-bottom: 8px;
+}
+
+.hex-refresh-btn {
+  background: rgba(200, 168, 78, 0.15);
+  border: 1px solid rgba(200, 168, 78, 0.3);
+  color: #c8a84e;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.hex-refresh-btn:hover {
+  background: rgba(200, 168, 78, 0.25);
+}
+
+.hex-refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+/* ── Soft-refresh indicator ───────────────────────────── */
+.hex-soft-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hex-spinner {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 2px solid rgba(200, 168, 78, 0.3);
+  border-top: 2px solid #c8a84e;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Loading skeleton ─────────────────────────────────── */
+.hex-loading-pulse {
+  height: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  margin: 4px 0;
+  animation: loading-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes loading-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+/* ── Empty state ──────────────────────────────────────── */
+.hex-empty-state {
+  font-size: 10px;
+  color: #555;
+  padding: 8px 0;
+  text-align: center;
+}
+
+/* ── Legal footer ─────────────────────────────────────── */
 .hex-legal-footer {
   position: fixed;
   bottom: 0;
   width: 100%;
-  font-size: 9px;
-  color: rgba(255, 255, 255, 0.3);
+  font-size: 8px;
+  color: rgba(255, 255, 255, 0.2);
   text-align: center;
-  padding: 4px 0;
-  background: rgba(0, 0, 0, 0.5);
+  padding: 2px 0;
+  background: rgba(0, 0, 0, 0.3);
   z-index: 9999;
+}
+
+/* ── Pin button ────────────────────────────────────────── */
+.hex-pin-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #aaa;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.hex-pin-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #f0f0f0;
+}
+
+/* ── Pinned widget ────────────────────────────────────── */
+.hex-pinned-widget {
+  position: fixed;
+  top: 8px;
+  right: 8px;
+  z-index: 99999;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 8px 12px;
+  min-width: 130px;
+  pointer-events: auto;
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hex-pin-close {
+  position: absolute;
+  top: 2px;
+  right: 6px;
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.hex-pin-close:hover {
+  color: #f0f0f0;
+}
+
+.hex-pinned-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #f0f0f0;
+  padding-right: 14px;
+}
+
+.hex-pinned-level {
+  font-size: 10px;
+  color: #888;
+}
+
+.hex-pinned-rank {
+  font-size: 11px;
+  font-weight: 600;
+  color: #5dade2;
+}
+
+.hex-pinned-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  margin-top: 2px;
+}
+
+/* ── Scrollbar ─────────────────────────────────────────── */
+.hex-main::-webkit-scrollbar {
+  width: 4px;
+}
+
+.hex-main::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.hex-main::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
 }

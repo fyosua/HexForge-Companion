@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useApi } from "../hooks/useApi";
 
 interface MatchSummary {
   match_id: string;
@@ -7,69 +7,48 @@ interface MatchSummary {
   game_version: string | null;
 }
 
-const PROXY_URL = "http://raspberrypi.local:1421";
-
-function isTauri(): boolean {
-  try {
-    return !!(window as any).__TAURI__;
-  } catch {
-    return false;
-  }
-}
-
-async function fetchMatches(): Promise<MatchSummary[]> {
-  if (isTauri()) {
-    const { invoke } = await import("@tauri-apps/api/core");
-    return await invoke<MatchSummary[]>("get_match_history", { limit: 20 });
-  }
-  const res = await fetch(`${PROXY_URL}/api/get-match-history`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ limit: 20 }),
-  });
-  return res.json();
+function placementColor(p: number | null): string {
+  if (p === null) return "#888";
+  if (p === 1) return "#c8a84e";
+  if (p <= 4) return "#88cc88";
+  if (p <= 6) return "#ccaa66";
+  return "#cc6666";
 }
 
 export function MatchHistory() {
-  const [matches, setMatches] = useState<MatchSummary[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: matches, loading } = useApi<MatchSummary[]>("get_match_history", { limit: 10 }, []);
 
-  useEffect(() => {
-    fetchMatches()
-      .then(setMatches)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  if (loading) {
+    return <div className="hex-loading-pulse" />;
+  }
 
-  if (loading) return <p style={{ color: "#999", fontSize: 13 }}>Loading match history...</p>;
-  if (matches.length === 0) return <p style={{ color: "#999", fontSize: 13 }}>No matches found.</p>;
+  if (!matches || matches.length === 0) {
+    return (
+      <div className="hex-empty-state">
+        No matches yet. Click "Refresh" to fetch recent games.
+      </div>
+    );
+  }
 
   return (
-    <div className="hex-hud-interactive">
-      <h3 style={{ margin: "0 0 8px", fontSize: 14, color: "#c8a84e" }}>Match History</h3>
-      <ul style={{ listStyle: "none", padding: 0 }}>
+    <div className="hex-widget hex-hud-interactive">
+      <div className="hex-widget-header">Match History</div>
+      <div className="hex-match-list">
         {matches.map((m) => (
-          <li
-            key={m.match_id}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              padding: "6px 8px",
-              margin: "4px 0",
-              background: "rgba(0,0,0,0.4)",
-              borderRadius: 4,
-              fontSize: 13,
-            }}
-          >
-            <span style={{ color: "#aaa" }}>
-              {m.game_version ? `v${m.game_version.split(".").slice(0, 2).join(".")}` : "—"}
-            </span>
-            <span style={{ fontWeight: 700, color: m.placement === 1 ? "#c8a84e" : "#e0e0e0" }}>
+          <div key={m.match_id} className="hex-match-row">
+            <span
+              className="hex-placement-badge"
+              style={{ background: placementColor(m.placement) }}
+            >
               #{m.placement ?? "?"}
             </span>
-          </li>
+            <span className="hex-match-version">{m.game_version ?? "—"}</span>
+            <span className="hex-match-time">
+              {new Date(m.game_datetime).toLocaleDateString()}
+            </span>
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }

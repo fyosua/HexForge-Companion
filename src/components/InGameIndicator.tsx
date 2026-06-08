@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { usePollingApi } from "../hooks/useApi";
 
 interface ActiveGameStatus {
   in_game: boolean;
@@ -6,73 +6,35 @@ interface ActiveGameStatus {
   game_start_time: number | null;
 }
 
-const PROXY_URL = "http://raspberrypi.local:1421";
-
-function isTauri(): boolean {
-  try { return !!(window as any).__TAURI__; }
-  catch { return false; }
-}
-
-async function fetchGameStatus(): Promise<ActiveGameStatus> {
-  if (isTauri()) {
-    const { invoke } = await import("@tauri-apps/api/core");
-    return await invoke<ActiveGameStatus>("get_active_game_status");
-  }
-  const res = await fetch(`${PROXY_URL}/api/get-active-game-status`, { method: "POST" });
-  return res.json();
-}
-
 export function InGameIndicator() {
-  const [status, setStatus] = useState<ActiveGameStatus | null>(null);
+  const { data: status, loading } = usePollingApi<ActiveGameStatus>(
+    "get_active_game_status",
+    {},
+    30000
+  );
 
-  useEffect(() => {
-    fetchGameStatus().then(setStatus).catch(() => {});
-    const interval = setInterval(() => {
-      fetchGameStatus().then(setStatus).catch(() => {});
-    }, 30000); // poll every 30s
-    return () => clearInterval(interval);
-  }, []);
+  const inGame = status?.in_game ?? false;
 
-  if (!status) return null;
+  if (loading && !status) return <div className="hex-loading-pulse" />;
 
   return (
-    <div
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-        padding: "4px 10px",
-        borderRadius: 12,
-        fontSize: 12,
-        fontWeight: 600,
-        marginBottom: 8,
-        background: status.in_game
-          ? "rgba(255,80,80,0.2)"
-          : "rgba(80,255,80,0.1)",
-        border: `1px solid ${status.in_game ? "#ff5050" : "#50ff50"}`,
-        color: status.in_game ? "#ff5050" : "#50ff50",
-      }}
-    >
-      <span
+    <div className="hex-widget hex-hud-interactive" style={{ padding: "4px 10px", marginBottom: 8 }}>
+      <div
+        className="hex-inline-indicator"
         style={{
-          width: 8,
-          height: 8,
-          borderRadius: "50%",
-          background: status.in_game ? "#ff5050" : "#50ff50",
-          display: "inline-block",
-          animation: status.in_game ? "pulse 1.5s infinite" : "none",
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          fontSize: 11,
         }}
-      />
-      {status.in_game ? "In Game" : "Lobby"}
+      >
+        <span
+          className={`hex-pulse-dot ${inGame ? "hex-pulse-green" : "hex-pulse-off"}`}
+        />
+        <span style={{ color: inGame ? "#88cc88" : "#888" }}>
+          {loading && !status ? "Checking..." : inGame ? "In Game" : "Lobby"}
+        </span>
+      </div>
     </div>
   );
 }
-
-// Add CSS for the pulse animation
-const style = document.createElement("style");
-style.textContent = `
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}`;
-document.head.appendChild(style);

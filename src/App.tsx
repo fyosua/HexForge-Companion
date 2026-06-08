@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { LegalFooter } from "./components/LegalFooter";
 import { DisplayModeWarning } from "./components/DisplayModeWarning";
 import { PlayerSearch } from "./components/PlayerSearch";
@@ -8,6 +8,7 @@ import { RankDisplay } from "./components/RankDisplay";
 import { InGameIndicator } from "./components/InGameIndicator";
 import { LeaderboardDisplay } from "./components/LeaderboardDisplay";
 import { PlatformStatus } from "./components/PlatformStatus";
+import { PinnedWidget } from "./components/PinnedWidget";
 import "./App.css";
 
 interface PlayerInfo {
@@ -15,6 +16,13 @@ interface PlayerInfo {
   game_name: string;
   tag_line: string;
   summoner_level: number;
+}
+
+interface RankInfo {
+  tier?: string;
+  rank?: string;
+  league_points?: number;
+  queue_type?: string;
 }
 
 function isTauri(): boolean {
@@ -41,9 +49,11 @@ function App() {
   const [player, setPlayer] = useState<PlayerInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [inTauri, setInTauri] = useState(false);
-  const [refreshMsg, setRefreshMsg] = useState<string | null>(null);
   const [refreshLoading, setRefreshLoading] = useState(false);
   const [refreshCounter, setRefreshCounter] = useState(0);
+  const [pinned, setPinned] = useState(false);
+  const [pinnedRank, setPinnedRank] = useState("");
+  const [pinnedInGame, setPinnedInGame] = useState(false);
 
   useEffect(() => {
     setInTauri(isTauri());
@@ -74,89 +84,146 @@ function App() {
     };
   }, []);
 
-  const handlePlayerResolved = (p: PlayerInfo) => {
+  // Poll rank + game status for pin widget
+  useEffect(() => {
+    if (!pinned || !player) return;
+    const interval = setInterval(async () => {
+      try {
+        const [ranks, gameStatus] = await Promise.all([
+          tauriInvoke<RankInfo[]>("get_player_rank"),
+          tauriInvoke<{ in_game: boolean }>("get_active_game_status"),
+        ]);
+        const tft = (ranks ?? []).find(
+          (r) => r.queue_type === "RANKED_TFT" || r.queue_type === "RANKED_TFT_TURBO"
+        );
+        if (tft?.tier) setPinnedRank(`${tft.tier} ${tft.rank ?? ""} ${tft.league_points ?? 0}LP`);
+        setPinnedInGame(gameStatus?.in_game ?? false);
+      } catch { /* poll silently */ }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [pinned, player]);
+
+  const handlePlayerResolved = useCallback((p: PlayerInfo) => {
     setPlayer(p);
     setError(null);
-    // Auto-refresh matches for the resolved player
     handleRefreshMatches();
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleRefreshMatches = async () => {
     setRefreshLoading(true);
-    setRefreshMsg(null);
     try {
-      const result = await tauriInvoke<any>("refresh_matches", { count: 20 });
-      setRefreshMsg(
-        `Fetched ${result.fetched} IDs, ${result.new_matches} new, ${result.errors} errors`
-      );
+      await tauriInvoke<any>("refresh_matches", { count: 20 });
       setRefreshCounter((c) => c + 1);
     } catch (err) {
-      setRefreshMsg(`Error: ${err}`);
+      setError(`Refresh error: ${err}`);
     } finally {
       setRefreshLoading(false);
     }
+  };
+
+  const handlePin = () => {
+    if (!player) return;
+    setPinned(!pinned);
+    // Grab current rank for the pinned display
+    tauriInvoke<RankInfo[]>("get_player_rank").then((ranks) => {
+      const tft = (ranks ?? []).find(
+        (r) => r.queue_type === "RANKED_TFT" || r.queue_type === "RANKED_TFT_TURBO"
+      );
+      if (tft?.tier) setPinnedRank(`${tft.tier} ${tft.rank ?? ""} ${tft.league_points ?? 0}LP`);
+    }).catch(() => {});
+    tauriInvoke<{ in_game: boolean }>("get_active_game_status").then((s) => {
+      setPinnedInGame(s?.in_game ?? false);
+    }).catch(() => {});
   };
 
   return (
     <div className="app-container">
       <DisplayModeWarning />
       {!inTauri && (
-        <div
-          style={{
-            background: "#1a1a2e",
-            border: "1px solid #c8a84e",
-            color: "#c8a84e",
-            padding: "8px 16px",
-            textAlign: "center",
-            fontSize: 13,
-            borderRadius: 4,
-            marginBottom: 8,
-          }}
-        >
-          ⚡ Browser preview — mock API active on port 1421.
-          Player search & stats use mock data.
+        <div className="hex-browser-banner">
+          ⚡ Browser preview — mock API on port 1421.
         </div>
       )}
-      <header className="hex-header">
-        <h1>HexForge Companion</h1>
-      </header>
-      <main className="hex-main hex-hud-interactive">
+
+      {/* Pinned overlay — shows when pinned, outside main layout */}
+      {pinned && player && (
+        <PinnedWidget
+          data={player}
+          rankLabel={pinnedRank}
+          inGame={pinnedInGame}
+          onUnpin={() => setPinned(false)}
+        />
+      )}
+
+      {/* Main dash — hidden when pinned, show compact search */}
+      {!pinned && (
+        <header className="hex-header">
+          <h1>HexForge Companion</h1>
+        </header>
+      )}
+
+      <main className="hex-main" style={pinned ? { paddingTop: 8 } : undefined}>
         <PlayerSearch onPlayerResolved={handlePlayerResolved} onError={setError} />
         {error && <div className="hex-error">{error}</div>}
-        {player && (
+
+        {player && !pinned && (
           <div className="hex-dashboard">
-            <h2>{player.game_name}#{player.tag_line}</h2>
-            <p>Summoner Level {player.summoner_level}</p>
+            <div className="hex-profile-header">
+              <div className="hex-profile-name">
+                {player.game_name}#{player.tag_line}
+                <span className="hex-profile-level">Lv.{player.summoner_level}</span>
+              </div>
+              <button
+                className="hex-pin-btn"
+                onClick={handlePin}
+                title="Pin as compact widget"
+              >
+                📌 Pin
+              </button>
+            </div>
+
             <InGameIndicator />
             <PlatformStatus />
             <LeaderboardDisplay />
             <RankDisplay key={refreshCounter} />
             <PlayerStats key={refreshCounter} />
-            <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12 }}>
+
+            <div className="hex-refresh-bar">
               <button
+                className="hex-refresh-btn"
                 onClick={handleRefreshMatches}
                 disabled={refreshLoading}
-                style={{
-                  background: "#c8a84e",
-                  border: "none",
-                  color: "#000",
-                  padding: "4px 12px",
-                  borderRadius: 4,
-                  fontWeight: 600,
-                  cursor: refreshLoading ? "wait" : "pointer",
-                  fontSize: 12,
-                }}
               >
-                {refreshLoading ? "Fetching..." : "Refresh Matches"}
+                {refreshLoading ? (
+                  <span className="hex-soft-refresh">
+                    <span className="hex-spinner" />
+                    Syncing...
+                  </span>
+                ) : (
+                  "Refresh Matches"
+                )}
               </button>
-              {refreshMsg && (
-                <span style={{ color: "#aaa", fontSize: 11 }}>{refreshMsg}</span>
-              )}
             </div>
+
             <MatchHistory key={refreshCounter} />
           </div>
         )}
+
+        {/* When pinned, show minimal search */}
+        {player && pinned && (
+          <div style={{ fontSize: 10, color: "#666", textAlign: "center", marginTop: 4 }}>
+            <button
+              className="hex-pin-btn"
+              onClick={handlePin}
+              style={{ fontSize: 10, padding: "2px 8px" }}
+            >
+              📌 Unpin & Open Dashboard
+            </button>
+          </div>
+        )}
       </main>
+
       <LegalFooter />
     </div>
   );
