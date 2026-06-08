@@ -281,6 +281,7 @@ pub fn spawn_watcher(
                         }
                     }
 
+                }
                 last_state = current;
             }
 
