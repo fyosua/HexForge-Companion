@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" width="1440" height="900">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0a1628"/>
+      <stop offset="100%" stop-color="#1a1a2e"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="rgba(10,22,40,0.85)"/>
+      <stop offset="100%" stop-color="rgba(26,26,46,0.85)"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#c8a84e"/>
+      <stop offset="100%" stop-color="#e6c86a"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="panelBlur">
+      <feGaussianBlur stdDeviation="4"/>
+    </filter>
+  </defs>
+
+  <!-- Background: TFT battlefield -->
+  <rect width="1440" height="900" fill="url(#bg)"/>
+
+  <!-- Hexagonal grid pattern (TFT board) -->
+  <g opacity="0.15" stroke="#4a6fa5" stroke-width="0.5" fill="none">
+    <polygon points="720,200 800,240 800,320 720,360 640,320 640,240"/>
+    <polygon points="800,240 880,280 880,360 800,400 720,360 720,320"/>
+    <polygon points="880,280 960,320 960,400 880,440 800,400 800,360"/>
+    <polygon points="960,320 1040,360 1040,440 960,480 880,440 880,400"/>
+    <polygon points="640,240 560,280 560,360 640,400 720,360 720,320"/>
+    <polygon points="560,280 480,320 480,400 560,440 640,400 640,360"/>
+    <polygon points="480,320 400,360 400,440 480,480 560,440 560,400"/>
+    <polygon points="1040,360 1120,400 1120,480 1040,520 960,480 960,440"/>
+  </g>
+
+  <!-- Carousel units -->
+  <g opacity="0.08">
+    <circle cx="300" cy="450" r="20" fill="#c8a84e"/>
+    <circle cx="1140" cy="350" r="20" fill="#c8a84e"/>
+    <circle cx="500" cy="580" r="25" fill="#5dade2"/>
+    <circle cx="900" cy="550" r="25" fill="#5dade2"/>
+  </g>
+
+  <!-- Overlay panels -->
+
+  <!-- Top-left: Rank Display panel -->
+  <g transform="translate(30, 20)">
+    <rect rx="6" ry="6" width="240" height="140" fill="rgba(10,22,40,0.82)" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+    <rect rx="6" ry="6" width="240" height="140" fill="url(#panel)" opacity="0.5"/>
+    <text x="16" y="30" fill="#c8a84e" font-family="Segoe UI, sans-serif" font-size="11" font-weight="600">RANKED TFT</text>
+    <text x="16" y="58" fill="#e6c86a" font-family="Segoe UI, sans-serif" font-size="22" font-weight="700">DIAMOND II</text>
+    <text x="16" y="80" fill="#aaa" font-family="Segoe UI, sans-serif" font-size="13">43 LP</text>
+    <line x1="16" y1="95" x2="224" y2="95" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+    <text x="16" y="114" fill="#5dade2" font-family="Segoe UI, sans-serif" font-size="12">W: 87</text>
+    <text x="120" y="114" fill="#e74c3c" font-family="Segoe UI, sans-serif" font-size="12">L: 73</text>
+    <text x="16" y="134" fill="#888" font-family="Segoe UI, sans-serif" font-size="10">Win rate: 54.4%</text>
+  </g>
+
+  <!-- Top-right: Pinned Widget -->
+  <g transform="translate(1170, 20)">
+    <rect rx="6" ry="6" width="240" height="80" fill="rgba(10,22,40,0.82)" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+    <circle cx="30" cy="40" r="16" fill="url(#accent)"/>
+    <text x="30" y="44" fill="#000" font-family="Segoe UI, sans-serif" font-size="10" font-weight="700" text-anchor="middle" dominant-baseline="middle">TFT</text>
+    <text x="56" y="30" fill="#e6c86a" font-family="Segoe UI, sans-serif" font-size="15" font-weight="700">DIAMOND II</text>
+    <text x="56" y="52" fill="#aaa" font-family="Segoe UI, sans-serif" font-size="11">43 LP · HexTactician#KR1</text>
+    <circle cx="224" cy="24" r="4" fill="#44ff44" filter="url(#glow)"/>
+  </g>
+
+  <!-- Left side: Player Stats panel -->
+  <g transform="translate(30, 175)">
+    <rect rx="6" ry="6" width="240" height="120" fill="rgba(10,22,40,0.82)" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+    <text x="16" y="28" fill="#c8a84e" font-family="Segoe UI, sans-serif" font-size="11" font-weight="600">PLAYER STATS</text>
+    <text x="16" y="52" fill="#aaa" font-family="Segoe UI, sans-serif" font-size="12">Avg Placement: <tspan fill="#e6c86a" font-weight="600">3.0</tspan></text>
+    <text x="16" y="72" fill="#aaa" font-family="Segoe UI, sans-serif" font-size="12">Top 4 Rate: <tspan fill="#5dade2" font-weight="600">60%</tspan></text>
+    <text x="16" y="92" fill="#aaa" font-family="Segoe UI, sans-serif" font-size="12">Win Rate: <tspan fill="#44ff44" font-weight="600">20%</tspan></text>
+    <text x="16" y="112" fill="#888" font-family="Segoe UI, sans-serif" font-size="10">Last 5 games</text>
+  </g>
+
+  <!-- Left side: Match History panel -->
+  <g transform="translate(30, 310)">
+    <rect rx="6" ry="6" width="240" height="180" fill="rgba(10,22,40,0.82)" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+    <text x="16" y="24" fill="#c8a84e" font-family="Segoe UI, sans-serif" font-size="11" font-weight="600">MATCH HISTORY</text>
+
+    <!-- Match row 1 -->
+    <rect x="16" y="36" width="30" height="22" rx="4" fill="#1a6b3c"/>
+    <text x="31" y="51" fill="#fff" font-family="Segoe UI, sans-serif" font-size="13" font-weight="600" text-anchor="middle">1st</text>
+    <text x="56" y="51" fill="#aaa" font-family="Segoe UI, sans-serif" font-size="11">14.11 · 32 min ago</text>
+
+    <!-- Match row 2 -->
+    <rect x="16" y="66" width="30" height="22" rx="4" fill="#1a6b3c"/>
+    <text x="31" y="81" fill="#fff" font-family="Segoe UI, sans-serif" font-size="13" font-weight="600" text-anchor="middle">3rd</text>
+    <text x="56" y="81" fill="#aaa" font-family="Segoe UI, sans-serif" font-size="11">14.11 · 1h ago</text>
+
+    <!-- Match row 3 -->
+    <rect x="16" y="96" width="30" height="22" rx="4" fill="#5d3a1a"/>
+    <text x="31" y="111" fill="#fff" font-family="Segoe UI, sans-serif" font-size="13" font-weight="600" text-anchor="middle">5th</text>
+    <text x="56" y="111" fill="#aaa" font-family="Segoe UI, sans-serif" font-size="11">14.10 · 2h ago</text>
+
+    <!-- Match row 4 -->
+    <rect x="16" y="126" width="30" height="22" rx="4" fill="#1a6b3c"/>
+    <text x="31" y="141" fill="#fff" font-family="Segoe UI, sans-serif" font-size="13" font-weight="600" text-anchor="middle">2nd</text>
+    <text x="56" y="141" fill="#aaa" font-family="Segoe UI, sans-serif" font-size="11">14.10 · 3h ago</text>
+
+    <!-- Match row 5 -->
+    <rect x="16" y="156" width="30" height="22" rx="4" fill="#5d3a1a"/>
+    <text x="31" y="171" fill="#fff" font-family="Segoe UI, sans-serif" font-size="13" font-weight="600" text-anchor="middle">4th</text>
+    <text x="56" y="171" fill="#aaa" font-family="Segoe UI, sans-serif" font-size="11">14.10 · 4h ago</text>
+  </g>
+
+  <!-- Center-bottom: Player Search bar -->
+  <g transform="translate(600, 800)">
+    <rect rx="8" ry="8" width="240" height="40" fill="rgba(10,22,40,0.9)" stroke="rgba(200,168,78,0.3)" stroke-width="1"/>
+    <text x="40" y="25" fill="#888" font-family="Segoe UI, sans-serif" font-size="13" dominant-baseline="middle">Search Riot ID...</text>
+    <rect x="190" y="8" width="36" height="24" rx="4" fill="#c8a84e"/>
+    <text x="208" y="24" fill="#000" font-family="Segoe UI, sans-serif" font-size="11" font-weight="700" text-anchor="middle">Go</text>
+  </g>
+
+  <!-- Bottom-right: Platform Status -->
+  <g transform="translate(1170, 115)">
+    <rect rx="6" ry="6" width="240" height="60" fill="rgba(10,22,40,0.82)" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+    <circle cx="20" cy="30" r="4" fill="#44ff44" filter="url(#glow)"/>
+    <text x="34" y="24" fill="#aaa" font-family="Segoe UI, sans-serif" font-size="11">Server Status</text>
+    <text x="34" y="44" fill="#44ff44" font-family="Segoe UI, sans-serif" font-size="11">Korea — All Online</text>
+  </g>
+
+  <!-- Riot Legal Footer overlay -->
+  <g transform="translate(30, 870)">
+    <text fill="rgba(255,255,255,0.2)" font-family="Segoe UI, sans-serif" font-size="8">HexForge Companion isn't endorsed by Riot Games. © 2026 Riot Games, Inc.</text>
+  </g>
+</svg>

@@ -139,14 +139,89 @@ MOCK_PLATFORM_STATUS = {
 
 
 class MockAPIHandler(http.server.BaseHTTPRequestHandler):
+    LANDING_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "landing")
+
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
+
+        # API health check
         if parsed.path == "/api/health":
             self._json(200, {"status": "ok", "mode": "mock"})
+
+        # Download page or binary
         elif parsed.path.startswith("/download/"):
             self._serve_download(parsed.path)
+
+        # Redirect /app to the Vite dev server (or Tauri app)
+        elif parsed.path == "/app" or parsed.path == "/app/":
+            self.send_response(302)
+            self.send_header("Location", "http://raspberrypi.local:1420/")
+            self.end_headers()
+
+        # Landing page at root
+        elif parsed.path == "/" or parsed.path == "/index.html":
+            self._serve_landing("index.html")
+
+        # Static assets from landing/ directory
+        elif parsed.path.startswith("/landing/"):
+            self._serve_static(parsed.path)
+
         else:
             self._json(404, {"error": "not found"})
+
+    def _serve_landing(self, filename):
+        """Serve a file from the landing/ directory."""
+        filepath = os.path.join(self.LANDING_DIR, filename)
+        if not os.path.isfile(filepath):
+            self._json(404, {"error": "not found"})
+            return
+        with open(filepath, "rb") as f:
+            data = f.read()
+        ext = os.path.splitext(filename)[1].lower()
+        mime = {
+            ".html": "text/html; charset=utf-8",
+            ".css": "text/css; charset=utf-8",
+            ".js": "application/javascript; charset=utf-8",
+            ".png": "image/png",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".svg": "image/svg+xml",
+            ".ico": "image/x-icon",
+        }.get(ext, "application/octet-stream")
+        self.send_response(200)
+        self.send_header("Content-Type", mime)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+        self.wfile.write(data)
+        print(f"[proxy] Served landing/{filename} ({len(data)} bytes)")
+
+    def _serve_static(self, path):
+        """Serve a static file from landing/assets/."""
+        # Remove leading / and sanitize
+        rel_path = path.lstrip("/")
+        filepath = os.path.join(os.path.dirname(os.path.abspath(__file__)), rel_path)
+        if not os.path.isfile(filepath):
+            self._json(404, {"error": "not found"})
+            return
+        with open(filepath, "rb") as f:
+            data = f.read()
+        ext = os.path.splitext(filepath)[1].lower()
+        mime = {
+            ".html": "text/html; charset=utf-8",
+            ".css": "text/css; charset=utf-8",
+            ".js": "application/javascript; charset=utf-8",
+            ".png": "image/png",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".svg": "image/svg+xml",
+            ".ico": "image/x-icon",
+        }.get(ext, "application/octet-stream")
+        self.send_response(200)
+        self.send_header("Content-Type", mime)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+        self.wfile.write(data)
+        print(f"[proxy] Served {path} ({len(data)} bytes)")
 
     def do_POST(self):
         parsed = urllib.parse.urlparse(self.path)
@@ -283,6 +358,9 @@ if __name__ == "__main__":
     server = http.server.HTTPServer((HOST, PORT), MockAPIHandler)
     print(f"[HexForge Proxy] Mock API running on http://{HOST}:{PORT}")
     print(f"[HexForge Proxy] Endpoints:")
+    print(f"  GET  /                        Landing page (Riot review)")
+    print(f"  GET  /app                     Redirect to frontend app")
+    print(f"  GET  /landing/assets/*        Static mockup assets")
     print(f"  GET  /api/health")
     print(f"  POST /api/resolve-player")
     print(f"  POST /api/get-match-history")

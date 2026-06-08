@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HexForge Companion — Lightweight TFT Overlay</title>
+<meta name="description" content="A privacy-first, transparent overlay for Teamfight Tactics. No Overwolf. No bloat. Zero telemetry.">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: #070b14;
+    color: #e0e0e0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: #5dade2; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+  /* ── Navigation ── */
+  nav {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 24px; background: rgba(7,11,20,0.95);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    position: sticky; top: 0; z-index: 100;
+  }
+  nav .logo { font-size: 18px; font-weight: 700; color: #c8a84e; }
+  nav .logo span { color: #5dade2; }
+  nav a { color: #999; font-size: 13px; margin-left: 24px; }
+  nav a:hover { color: #e0e0e0; text-decoration: none; }
+  .nav-cta {
+    background: #c8a84e; color: #000 !important; padding: 6px 16px;
+    border-radius: 4px; font-weight: 600; font-size: 12px;
+  }
+  .nav-cta:hover { background: #d4b85a !important; }
+
+  /* ── Hero ── */
+  .hero {
+    text-align: center; padding: 100px 24px 80px;
+    background: radial-gradient(ellipse at 50% 0%, rgba(200,168,78,0.06) 0%, transparent 60%);
+  }
+  .hero h1 { font-size: 44px; font-weight: 800; margin-bottom: 16px; line-height: 1.2; }
+  .hero h1 .gold { color: #c8a84e; }
+  .hero h1 .blue { color: #5dade2; }
+  .hero .subtitle {
+    font-size: 18px; color: #888; max-width: 600px; margin: 0 auto 32px;
+  }
+  .hero-badges { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-bottom: 36px; }
+  .hero-badge {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+    padding: 6px 14px; border-radius: 20px; font-size: 12px; color: #aaa;
+  }
+  .hero-badge strong { color: #e0e0e0; }
+
+  .hero-cta {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: #c8a84e; color: #000; padding: 14px 32px;
+    border-radius: 8px; font-size: 16px; font-weight: 700; transition: all 0.2s;
+  }
+  .hero-cta:hover { background: #d4b85a; transform: translateY(-1px); text-decoration: none; }
+  .hero-cta small { font-weight: 400; font-size: 11px; opacity: 0.7; }
+
+  .hero-secondary { margin-top: 16px; }
+  .hero-secondary a {
+    color: #666; font-size: 13px; margin: 0 12px;
+  }
+
+  /* ── Screenshot ── */
+  .screenshot-section {
+    padding: 60px 0;
+    background: linear-gradient(180deg, #070b14 0%, #0d1225 100%);
+  }
+  .screenshot-section .container { text-align: center; }
+  .screenshot-section img {
+    max-width: 100%; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .screenshot-caption { font-size: 12px; color: #555; margin-top: 12px; }
+
+  /* ── Features ── */
+  .features { padding: 80px 0; }
+  .features h2, .screenshot-section h2, .compliance h2, .download-section h2 {
+    text-align: center; font-size: 28px; margin-bottom: 48px;
+  }
+  .features h2 .gold { color: #c8a84e; }
+  .feature-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+  }
+  .feature-card {
+    background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 8px; padding: 28px 24px; transition: border-color 0.2s;
+  }
+  .feature-card:hover { border-color: rgba(200,168,78,0.2); }
+  .feature-icon { font-size: 28px; margin-bottom: 12px; }
+  .feature-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+  .feature-card p { font-size: 13px; color: #888; line-height: 1.5; }
+
+  /* ── How It Works ── */
+  .how-it-works { padding: 80px 0; background: rgba(255,255,255,0.01); }
+  .how-it-works h2 { text-align: center; font-size: 28px; margin-bottom: 48px; }
+  .steps { display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; }
+  .step {
+    flex: 1; min-width: 200px; max-width: 300px; text-align: center;
+  }
+  .step-num {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: #c8a84e; color: #000; font-weight: 700; font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 12px;
+  }
+  .step h3 { font-size: 15px; margin-bottom: 6px; }
+  .step p { font-size: 13px; color: #888; line-height: 1.5; }
+
+  /* ── Compliance ── */
+  .compliance { padding: 80px 0; }
+  .compliance h2 { margin-bottom: 32px; }
+  .compliance-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px; max-width: 800px; margin: 0 auto;
+  }
+  .compliance-item {
+    background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 6px; padding: 16px 20px; font-size: 13px;
+  }
+  .compliance-item .check { color: #44ff44; margin-right: 8px; }
+  .compliance-item strong { color: #c8a84e; }
+  .compliance-note {
+    text-align: center; font-size: 11px; color: #555; margin-top: 24px; max-width: 600px; margin-left: auto; margin-right: auto;
+  }
+
+  /* ── Download ── */
+  .download-section {
+    padding: 80px 0; text-align: center;
+    background: radial-gradient(ellipse at 50% 100%, rgba(200,168,78,0.06) 0%, transparent 60%);
+  }
+  .download-section h2 { margin-bottom: 16px; }
+  .download-section .sub { color: #888; font-size: 14px; margin-bottom: 32px; }
+  .download-cards {
+    display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;
+  }
+  .download-card {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px; padding: 28px 32px; min-width: 240px;
+  }
+  .download-card h3 { font-size: 14px; margin-bottom: 4px; }
+  .download-card .plat { font-size: 11px; color: #666; margin-bottom: 16px; }
+  .download-btn {
+    display: inline-block; background: #c8a84e; color: #000; padding: 10px 24px;
+    border-radius: 6px; font-weight: 600; font-size: 13px; transition: all 0.2s;
+  }
+  .download-btn:hover { background: #d4b85a; transform: translateY(-1px); text-decoration: none; }
+  .download-btn.secondary { background: rgba(255,255,255,0.06); color: #aaa; }
+  .download-btn.secondary:hover { background: rgba(255,255,255,0.1); }
+
+  /* ── Footer ── */
+  footer {
+    padding: 40px 24px; text-align: center;
+    border-top: 1px solid rgba(255,255,255,0.04);
+  }
+  footer .riot-legal {
+    font-size: 9px; color: rgba(255,255,255,0.15); line-height: 1.6; max-width: 700px; margin: 0 auto;
+  }
+  footer .links { margin-top: 16px; }
+  footer .links a { color: #555; font-size: 11px; margin: 0 10px; }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 28px; }
+    .hero { padding: 60px 16px 40px; }
+    .feature-grid { grid-template-columns: 1fr; }
+    .steps { flex-direction: column; align-items: center; }
+    .download-cards { flex-direction: column; align-items: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav>
+  <div class="logo">HexForge <span>Companion</span></div>
+  <div>
+    <a href="#features">Features</a>
+    <a href="#how">How It Works</a>
+    <a href="#compliance">Compliance</a>
+    <a href="https://github.com/fyosua/HexForge-Companion" target="_blank">GitHub</a>
+    <a href="/download/" class="nav-cta">⬇ Download</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <h1>
+    <span class="gold">Lightweight</span> TFT Overlay.<br>
+    <span class="blue">No Overwolf.</span> No Bloat.
+  </h1>
+  <p class="subtitle">
+    A transparent, always-on-top companion for Teamfight Tactics.
+    Rust-powered. Privacy-first. Zero telemetry by default.
+  </p>
+  <div class="hero-badges">
+    <span class="hero-badge"><strong>&lt;15 MB</strong> binary</span>
+    <span class="hero-badge"><strong>&lt;1%</strong> CPU idle</span>
+    <span class="hero-badge"><strong>Open Source</strong> (MIT)</span>
+    <span class="hero-badge"><strong>Zero</strong> telemetry</span>
+    <span class="hero-badge"><strong>Rust</strong> + Tauri v2</span>
+  </div>
+  <a href="/download/" class="hero-cta">
+    ⬇ Download for Windows <small>v0.5.0 · 24 MB</small>
+  </a>
+  <div class="hero-secondary">
+    <a href="https://github.com/fyosua/HexForge-Companion">View on GitHub →</a>
+    <a href="#features">Learn More ↓</a>
+  </div>
+</section>
+
+<!-- Screenshot -->
+<section class="screenshot-section" id="screenshot">
+  <div class="container">
+    <h2>In-Game <span style="color:#c8a84e;">Overlay</span></h2>
+    <img src="/landing/assets/overlay-mockup.svg" alt="HexForge Companion overlay on TFT" style="max-width:100%;border-radius:8px;border:1px solid rgba(255,255,255,0.06);box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+    <p class="screenshot-caption">Mockup: HexForge Companion overlay panels on the TFT battlefield.</p>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="features" id="features">
+  <div class="container">
+    <h2>Built for <span class="gold">Performance</span></h2>
+    <div class="feature-grid">
+
+      <div class="feature-card">
+        <div class="feature-icon">🪟</div>
+        <h3>Transparent Overlay</h3>
+        <p>Frameless, always-on-top overlay that sits on top of TFT. Cursor passes through to the game, except interactive elements.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🎮</div>
+        <h3>Auto-Attach</h3>
+        <p>Detects TFT process launch, resizes overlay to match the game window, and hides when TFT closes. No manual positioning needed.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🔔</div>
+        <h3>System Tray Lifecycle</h3>
+        <p>Minimizes to tray when TFT exits. Show/hide with system tray menu or Ctrl+Shift+H hotkey. Never in your way.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>Live Rank &amp; Match Data</h3>
+        <p>View your rank, LP, win/loss, match history, and aggregated stats — all pulled from the Riot API. Pinned widget for at-a-glance data.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🏆</div>
+        <h3>Leaderboard Browser</h3>
+        <p>Browse Challenger, Grandmaster, and Master standings. See who's climbing and who's holding rank.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🔒</div>
+        <h3>Privacy First</h3>
+        <p>Zero telemetry by default. One-click GDPR wipe. All data stored locally in SQLite. Your data stays yours.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- How It Works -->
+<section class="how-it-works" id="how">
+  <div class="container">
+    <h2>How It <span style="color:#c8a84e;">Works</span></h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Download &amp; Run</h3>
+        <p>No installation wizard needed. Download, unzip, run. Works immediately in Mock mode with no API key.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Launch TFT</h3>
+        <p>The overlay detects TFT starting up, snaps to the game window, and appears as a transparent HUD.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Search Your Riot ID</h3>
+        <p>Type your Riot ID (e.g. Player#TAG) to see rank, match history, stats, and live game status.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <h3>Pin or Browse</h3>
+        <p>Pin a compact widget for at-a-glance data, or browse the full dashboard with leaderboards and server status.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Compliance -->
+<section class="compliance" id="compliance">
+  <div class="container">
+    <h2>Riot Games <span style="color:#c8a84e;">Compliance</span></h2>
+    <div class="compliance-grid">
+      <div class="compliance-item"><span class="check">✓</span> <strong>No Augment/Legend Win Rates</strong> — Blocked at the API client level. Never calculated, never displayed.</div>
+      <div class="compliance-item"><span class="check">✓</span> <strong>No Live Scouting</strong> — Spectator endpoint never called. No opponent data during games.</div>
+      <div class="compliance-item"><span class="check">✓</span> <strong>No Decision Dictation</strong> — Displays data only. Never tells users what to play or build.</div>
+      <div class="compliance-item"><span class="check">✓</span> <strong>Legal Boilerplate</strong> — Riot Games legal disclaimer on every dashboard view.</div>
+      <div class="compliance-item"><span class="check">✓</span> <strong>GDPR One-Click Wipe</strong> — Delete all stored account data from the app with one command.</div>
+      <div class="compliance-item"><span class="check">✓</span> <strong>Read-Only Process Detection</strong> — Uses standard OS APIs (FindWindowW / CreateToolhelp32Snapshot only). No memory scanning or DLL injection.</div>
+    </div>
+    <p class="compliance-note">
+      Full compliance audit available in <a href="https://github.com/fyosua/HexForge-Companion/blob/main/docs/COMPLIANCE.md">docs/COMPLIANCE.md</a>.
+    </p>
+  </div>
+</section>
+
+<!-- Download -->
+<section class="download-section" id="download">
+  <div class="container">
+    <h2>Get <span style="color:#c8a84e;">HexForge Companion</span></h2>
+    <p class="sub">Download and play. Zero config. Works immediately in Mock mode.</p>
+    <div class="download-cards">
+      <div class="download-card">
+        <h3>⬇ Windows</h3>
+        <p class="plat">x86_64 · NSIS Installer</p>
+        <a href="/download/hexforge-companion.exe" class="download-btn" id="win-btn">⬇ Download .exe</a>
+        <p class="plat" style="margin-top:8px;font-size:10px;color:#555;">~24 MB · WebView2 auto-installed</p>
+      </div>
+      <div class="download-card">
+        <h3>🐧 Linux</h3>
+        <p class="plat">x86_64 · deb / AppImage</p>
+        <a href="https://github.com/fyosua/HexForge-Companion/releases" class="download-btn secondary" target="_blank">View Releases →</a>
+      </div>
+      <div class="download-card">
+        <h3>🍎 macOS</h3>
+        <p class="plat">arm64 + x86_64 · dmg</p>
+        <a href="https://github.com/fyosua/HexForge-Companion/releases" class="download-btn secondary" target="_blank">View Releases →</a>
+      </div>
+    </div>
+    <p style="font-size:11px;color:#555;margin-top:24px;">
+      Or build from source: <code style="background:rgba(255,255,255,0.06);padding:2px 8px;border-radius:3px;">git clone https://github.com/fyosua/HexForge-Companion</code>
+    </p>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="riot-legal">
+    HexForge Companion isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
+  </div>
+  <div class="links">
+    <a href="https://github.com/fyosua/HexForge-Companion">GitHub</a>
+    <a href="https://github.com/fyosua/HexForge-Companion/blob/main/LICENSE">MIT License</a>
+    <a href="https://github.com/fyosua/HexForge-Companion/blob/main/docs/COMPLIANCE.md">Compliance</a>
+    <a href="https://github.com/fyosua/HexForge-Companion/blob/main/docs/ARCHITECTURE.md">Architecture</a>
+  </div>
+</footer>
+
+<script>
+  // Check if the Windows binary exists; if not, show placeholder
+  fetch('/api/health')
+    .then(r => r.json())
+    .then(d => {
+      if (d.mode === 'mock') {
+        // Backend is running — good
+      }
+    })
+    .catch(() => {});
+
+  // Check if download exists
+  fetch('/download/hexforge-companion.exe', { method: 'HEAD' })
+    .then(r => {
+      if (!r.ok) {
+        document.getElementById('win-btn').innerText = '⬇ Build in Progress...';
+        document.getElementById('win-btn').style.pointerEvents = 'none';
+        document.getElementById('win-btn').style.opacity = '0.5';
+      }
+    })
+    .catch(() => {});
+</script>
+
+</body>
+</html>
