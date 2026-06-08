@@ -4,7 +4,7 @@ use std::sync::{
 };
 use std::thread;
 use std::time::{Duration, Instant};
-use tauri::Manager, {AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 use serde::Serialize;
 
 /// Whether the TFT game process/window is currently detected.
