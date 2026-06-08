@@ -14,16 +14,12 @@
       {
         "label": "overlay",
         "title": "HexForge Companion",
-        "width": 1920,
-        "height": 1080,
-        "decorations": false,
-        "transparent": true,
-        "alwaysOnTop": true,
-        "focus": false,
-        "visible": true,
-        "skipTaskbar": true,
+        "width": 1200,
+        "height": 800,
+        "decorations": true,
         "resizable": true,
-        "center": false
+        "center": true,
+        "visible": true
       }
     ],
     "security": {
