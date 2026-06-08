@@ -1,16 +1,21 @@
 use rusqlite::Connection;
-use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 
 mod api;
 mod db;
 mod overlay;
 mod commands;
+mod process_watcher;
 
 pub struct AppState {
     pub db: Mutex<Connection>,
     pub api_key: String,
     pub api_mode: api::ApiMode,
     pub active_puuid: Mutex<Option<String>>,
+    /// Shared flag that keeps the process-watcher thread alive.
+    /// Set to `false` to stop the watcher.
+    pub watcher_running: Arc<AtomicBool>,
 }
 
 /// Print a formatted startup banner with version, mode, and paths.
@@ -92,13 +97,25 @@ pub fn run() {
     print_startup_banner(&api_mode, &db_path);
     warn_if_production_mock(&api_mode);
 
+    // Shared flag for the process watcher thread.
+    // The thread gets its own clone; dropping the AppState clone
+    // after the app exits causes the watcher to stop automatically.
+    let watcher_flag = Arc::new(AtomicBool::new(true));
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .setup(move |app| {
+            let handle = app.handle().clone();
+            process_watcher::spawn_watcher(handle, 2000);
+            eprintln!("[HexForge] Process watcher started (polling every 2s)");
+            Ok(())
+        })
         .manage(AppState {
             db: Mutex::new(conn),
             api_key,
             api_mode,
             active_puuid: Mutex::new(None),
+            watcher_running: watcher_flag,
         })
         .invoke_handler(tauri::generate_handler![
             commands::resolve_player,

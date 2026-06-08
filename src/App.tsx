@@ -9,6 +9,7 @@ import { InGameIndicator } from "./components/InGameIndicator";
 import { LeaderboardDisplay } from "./components/LeaderboardDisplay";
 import { PlatformStatus } from "./components/PlatformStatus";
 import { PinnedWidget } from "./components/PinnedWidget";
+import { TftConnectionBadge, useTftWatcher } from "./hooks/useTftWatcher";
 import "./App.css";
 
 interface PlayerInfo {
@@ -54,6 +55,7 @@ function App() {
   const [pinned, setPinned] = useState(false);
   const [pinnedRank, setPinnedRank] = useState("");
   const [pinnedInGame, setPinnedInGame] = useState(false);
+  const { state: tftState } = useTftWatcher();
 
   useEffect(() => {
     setInTauri(isTauri());
@@ -185,6 +187,7 @@ function App() {
 
             <InGameIndicator />
             <PlatformStatus />
+            <TftConnectionBadge state={tftState} />
             <LeaderboardDisplay />
             <RankDisplay key={`rank-${refreshCounter}`} />
             <PlayerStats key={`stats-${refreshCounter}`} />
