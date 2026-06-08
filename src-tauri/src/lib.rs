@@ -174,6 +174,11 @@ pub fn run() {
             process_watcher::spawn_watcher(handle, 2000);
             eprintln!("[HexForge] Process watcher started (polling every 2s)");
 
+            // Register updater plugin for auto-updates
+            #[cfg(desktop)]
+            app.handle().plugin(tauri_plugin_updater::Builder::new().build()).ok();
+            app.handle().plugin(tauri_plugin_process::init());
+
             // Register system tray (no tray on mobile)
             #[cfg(desktop)]
             if let Err(e) = setup_tray(app) {

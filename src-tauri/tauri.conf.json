@@ -69,6 +69,18 @@
       "appimage": {
         "bundleMediaFramework": true
       }
+    },
+    "createUpdaterArtifacts": "v1Compatible"
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "CHANGE-ME-RUN-npm-run-tauri-signer-generate--w-~/.tauri/hexforge.key",
+      "endpoints": [
+        "https://github.com/fyosua/HexForge-Companion/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
     }
   }
 }

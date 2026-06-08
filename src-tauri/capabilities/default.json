@@ -1,0 +1,15 @@
+{
+  "identifier": "default",
+  "description": "Default capabilities for HexForge Companion",
+  "windows": [
+    "overlay"
+  ],
+  "permissions": [
+    "core:default",
+    "opener:default",
+    "shell:allow-open",
+    "updater:default",
+    "process:default",
+    "process:allow-relaunch"
+  ]
+}

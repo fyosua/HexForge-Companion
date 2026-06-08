@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { LegalFooter } from "./components/LegalFooter";
+import { useAppUpdater, UpdateBadge } from "./hooks/useAppUpdater";
 import { DisplayModeWarning } from "./components/DisplayModeWarning";
 import { PlayerSearch } from "./components/PlayerSearch";
 import { MatchHistory } from "./components/MatchHistory";
@@ -56,6 +57,7 @@ function App() {
   const [pinnedRank, setPinnedRank] = useState("");
   const [pinnedInGame, setPinnedInGame] = useState(false);
   const { state: tftState } = useTftWatcher();
+  const updateInfo = useAppUpdater();
 
   useEffect(() => {
     setInTauri(isTauri());
@@ -227,6 +229,7 @@ function App() {
       </main>
 
       <LegalFooter />
+      <UpdateBadge update={updateInfo} />
     </div>
   );
 }
