@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
 import { LegalFooter } from "./components/LegalFooter";
 import { DisplayModeWarning } from "./components/DisplayModeWarning";
 import { PlayerSearch } from "./components/PlayerSearch";
@@ -14,22 +13,38 @@ interface PlayerInfo {
   summoner_level: number;
 }
 
+function isTauri(): boolean {
+  try {
+    return !!(window as any).__TAURI__;
+  } catch {
+    return false;
+  }
+}
+
 function App() {
   const [player, setPlayer] = useState<PlayerInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [inTauri, setInTauri] = useState(false);
 
   useEffect(() => {
-    // Initialize cursor passthrough
+    setInTauri(isTauri());
+    if (!isTauri()) return;
+
+    let invoke: (cmd: string) => void;
+    import("@tauri-apps/api/core").then((mod) => {
+      invoke = mod.invoke;
+    }).catch(() => {});
+
     const onMouseOver = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (target.closest(".hex-hud-interactive")) {
-        invoke("hud_bounds_enter");
+        invoke?.("hud_bounds_enter");
       }
     };
     const onMouseOut = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (target.closest(".hex-hud-interactive")) {
-        invoke("hud_bounds_leave");
+        invoke?.("hud_bounds_leave");
       }
     };
     document.addEventListener("mouseover", onMouseOver);
@@ -48,6 +63,23 @@ function App() {
   return (
     <div className="app-container">
       <DisplayModeWarning />
+      {!inTauri && (
+        <div
+          style={{
+            background: "#1a1a2e",
+            border: "1px solid #c8a84e",
+            color: "#c8a84e",
+            padding: "8px 16px",
+            textAlign: "center",
+            fontSize: 13,
+            borderRadius: 4,
+            marginBottom: 8,
+          }}
+        >
+          ⚡ Browser preview — mock API active on port 1421.
+          Player search & stats use mock data.
+        </div>
+      )}
       <header className="hex-header">
         <h1>HexForge Companion</h1>
       </header>

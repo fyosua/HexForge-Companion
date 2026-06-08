@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
 
 interface Stats {
   total_games: number;
@@ -9,13 +8,30 @@ interface Stats {
   win_rate_pct: number;
 }
 
+const PROXY_URL = "http://raspberrypi.local:1421";
+
+function isTauri(): boolean {
+  try {
+    return !!(window as any).__TAURI__;
+  } catch {
+    return false;
+  }
+}
+
+async function fetchStats(): Promise<Stats> {
+  if (isTauri()) {
+    const { invoke } = await import("@tauri-apps/api/core");
+    return await invoke<Stats>("get_player_stats");
+  }
+  const res = await fetch(`${PROXY_URL}/api/get-player-stats`, { method: "POST" });
+  return res.json();
+}
+
 export function PlayerStats() {
   const [stats, setStats] = useState<Stats | null>(null);
 
   useEffect(() => {
-    invoke<Stats>("get_player_stats")
-      .then(setStats)
-      .catch(() => {});
+    fetchStats().then(setStats).catch(() => {});
   }, []);
 
   if (!stats || stats.total_games === 0) return null;

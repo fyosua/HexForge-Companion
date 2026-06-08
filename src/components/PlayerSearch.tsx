@@ -1,5 +1,4 @@
 import { useState, FormEvent } from "react";
-import { invoke } from "@tauri-apps/api/core";
 
 interface PlayerInfo {
   puuid: string;
@@ -13,6 +12,47 @@ interface Props {
   onError: (error: string | null) => void;
 }
 
+/** Check if running inside Tauri WebView */
+function isTauri(): boolean {
+  try {
+    return !!(window as any).__TAURI__;
+  } catch {
+    return false;
+  }
+}
+
+/** Proxy URL for browser mode — defaults to the mock API */
+const PROXY_URL = "http://raspberrypi.local:1421";
+
+/** Tauri invoke wrapper — gracefully falls back to HTTP proxy in browser */
+async function invokePlayer(
+  gameName: string,
+  tagLine: string,
+  platform: string
+): Promise<PlayerInfo> {
+  if (isTauri()) {
+    // Running inside Tauri — use native IPC
+    const { invoke } = await import("@tauri-apps/api/core");
+    return await invoke<PlayerInfo>("resolve_player", {
+      gameName,
+      tagLine: tagLine.replace(/^#/, ""),
+      platform,
+    });
+  }
+
+  // Running in browser — use HTTP proxy
+  const res = await fetch(`${PROXY_URL}/api/resolve-player`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ gameName, tagLine: tagLine.replace(/^#/, ""), platform }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
 export function PlayerSearch({ onPlayerResolved, onError }: Props) {
   const [gameName, setGameName] = useState("");
   const [tagLine, setTagLine] = useState("");
@@ -23,11 +63,11 @@ export function PlayerSearch({ onPlayerResolved, onError }: Props) {
     setLoading(true);
     onError(null);
     try {
-      const player = await invoke<PlayerInfo>("resolve_player", {
-        gameName: gameName.trim(),
-        tagLine: tagLine.trim().replace(/^#/, ""),
-        platform: "na1",
-      });
+      const player = await invokePlayer(
+        gameName.trim(),
+        tagLine.trim(),
+        "kr"
+      );
       onPlayerResolved(player);
     } catch (err) {
       onError(String(err));

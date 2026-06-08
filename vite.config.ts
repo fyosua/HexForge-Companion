@@ -5,6 +5,8 @@ export default defineConfig({
   plugins: [react()],
   clearScreen: false,
   server: {
+    host: "0.0.0.0",
+    allowedHosts: ["raspberrypi.local", "192.168.0.105"],
     port: 1420,
     strictPort: true,
     watch: {
