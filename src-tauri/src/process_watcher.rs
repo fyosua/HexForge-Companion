@@ -200,7 +200,7 @@ pub fn spawn_watcher(app_handle: AppHandle, interval_ms: u64) -> Arc<AtomicBool>
 
     thread::spawn(move || {
         let interval = Duration::from_millis(interval_ms);
-        let mut last_state: Option<TftState> = None;
+        let mut last_state: Option<TftState> = Some(TftState::Detached);
         let mut detach_since: Option<Instant> = None;
         let mut puuid_clear_emitted = false;
 
