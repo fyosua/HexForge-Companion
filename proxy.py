@@ -31,14 +31,13 @@ import glob
 
 HOST = "0.0.0.0"
 PORT = 1421
+APP_VERSION = "0.6.0"
 
-# Directory where built binaries are placed
+# Directory where built binaries are placed for download
 DOWNLOAD_DIR = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
-    "src-tauri",
-    "target",
-    "x86_64-pc-windows-gnu",
-    "release",
+    "landing",
+    "downloads",
 )
 
 MOCK_PUUID = "S7vF9kG2hJ5mN8qR3tW1xZ4cB6yA0dE8fL7pO2iU9sK4jH5gF3vB1nM6xC0zR"
@@ -305,28 +304,48 @@ class MockAPIHandler(http.server.BaseHTTPRequestHandler):
 
     def _serve_download(self, path):
         """Serve download page or binary file."""
-        # If requesting the .exe itself
-        if path.endswith(".exe"):
-            exe_path = os.path.join(DOWNLOAD_DIR, "hexforge-companion.exe")
-            if os.path.exists(exe_path):
-                file_size = os.path.getsize(exe_path)
+        # Detect available builds in DOWNLOAD_DIR
+        builds = []
+        for f in os.listdir(DOWNLOAD_DIR) if os.path.isdir(DOWNLOAD_DIR) else []:
+            fp = os.path.join(DOWNLOAD_DIR, f)
+            if os.path.isfile(fp) and not f.startswith("."):
+                builds.append({
+                    "filename": f,
+                    "size": os.path.getsize(fp),
+                    "url": f"/download/{f}",
+                })
+
+        # Serve a specific binary file: /download/<filename>
+        filename = os.path.basename(path)
+        if filename and filename != "download" and "/" not in filename.strip("/"):
+            bin_path = os.path.join(DOWNLOAD_DIR, filename)
+            if os.path.exists(bin_path):
+                file_size = os.path.getsize(bin_path)
                 self.send_response(200)
                 self.send_header("Content-Type", "application/octet-stream")
-                self.send_header("Content-Disposition", 'attachment; filename="hexforge-companion.exe"')
+                self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
                 self.send_header("Content-Length", str(file_size))
                 self.send_header("Access-Control-Allow-Origin", "*")
                 self.end_headers()
-                with open(exe_path, "rb") as f:
+                with open(bin_path, "rb") as f:
                     self.wfile.write(f.read())
+                print(f"[proxy] Served download: {filename} ({file_size} bytes)")
                 return
-            self._json(404, {"error": "Binary not found — build may still be in progress."})
-            return
+            else:
+                self._json(404, {"error": f"Binary '{filename}' not found."})
+                return
 
-        # Serve download page
-        exe_exists = os.path.exists(os.path.join(DOWNLOAD_DIR, "hexforge-companion.exe"))
-        exe_size = 0
-        if exe_exists:
-            exe_size = os.path.getsize(os.path.join(DOWNLOAD_DIR, "hexforge-companion.exe"))
+        # Serve download page listing all available builds
+        cards = ""
+        for b in builds:
+            mb = b["size"] // (1024 * 1024)
+            cards += f'<div style="margin:12px 0;"><a class="btn" href="{b["url"]}">{b["filename"]} ({mb} MB)</a></div>\n'
+
+        status_html = ""
+        if builds:
+            status_html = f'<div class="status">✅ {len(builds)} build(s) available</div>'
+        else:
+            status_html = '<div class="status">⏳ No builds available yet — check back soon</div>'
 
         page = f"""<!DOCTYPE html>
 <html lang="en">
@@ -347,15 +366,15 @@ class MockAPIHandler(http.server.BaseHTTPRequestHandler):
 <body>
   <div class="card">
     <h1>⬇ HexForge Companion</h1>
-    <p style="color:#aaa;font-size:13px;">Windows x86_64 — Release Build</p>
-    {f'<a class="btn" href="/download/hexforge-companion.exe">Download .exe ({exe_size // 1024 // 1024} MB)</a>' if exe_exists else '<button class="btn" disabled>Build in progress...</button>'}
-    <div class="status">{f'✅ Build complete — {exe_size // 1024 // 1024} MB' if exe_exists else '⏳ Cross-compilation is running...'}</div>
+    <p style="color:#aaa;font-size:13px;">v{APP_VERSION} — Downloads</p>
+    {cards if cards else '<p style="color:#666;">No builds available yet.</p>'}
+    {status_html}
     <div class="info">
       <strong>Zero config:</strong> Download and run — the app works in <strong>Mock mode</strong> out of the box with no API key needed. Full features work immediately.
       <br><br>
       <strong>Optional: Live data with API key</strong>
       <ol>
-        <li>Create a <code>.env</code> file next to the <code>.exe</code></li>
+        <li>Create a <code>.env</code> file next to the binary</li>
         <li>Add <code>RGAPI_KEY=RGAPI-xxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</code></li>
         <li>Restart the app — automatically switches to live API mode</li>
       </ol>
@@ -363,7 +382,7 @@ class MockAPIHandler(http.server.BaseHTTPRequestHandler):
     </div>
     <p style="font-size:10px;color:#555;">Built from <a href="https://github.com/fyosua/HexForge-Companion" style="color:#5dade2;">github.com/fyosua/HexForge-Companion</a></p>
   </div>
-  <div class="footer">HexForge Companion isn't endorsed by Riot Games.</div>
+  <div class="footer">HexForge Companion isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games and all associated properties are trademarks or registered trademarks of Riot Games, Inc.</div>
 </body></html>"""
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")

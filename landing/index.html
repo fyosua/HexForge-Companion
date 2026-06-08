@@ -418,9 +418,9 @@
       </div>
       <div class="download-card">
         <h3>🐧 Linux</h3>
-        <p class="plat">x86_64 · .deb / AppImage</p>
-        <a href="https://github.com/fyosua/HexForge-Companion/releases" class="download-btn secondary" target="_blank">
-          View Releases →
+        <p class="plat">arm64 · Native Binary</p>
+        <a href="https://github.com/fyosua/HexForge-Companion/releases" class="download-btn secondary" id="linux-dl-btn" target="_blank">
+          View Releases → <span class="build-status" id="linux-build-status">Checking...</span>
         </a>
       </div>
       <div class="download-card">
@@ -497,9 +497,13 @@
       unavailableEl.style.display = 'block';
     });
 
-  // ── Download status: check if .exe exists ──
+  // ── Download status: check available builds ──
   var winBtn = document.getElementById('win-dl-btn');
   var winStatus = document.getElementById('win-build-status');
+  var linuxBtn = document.getElementById('linux-dl-btn');
+  var linuxStatus = document.getElementById('linux-build-status');
+
+  // Check Windows build
   fetch('/download/hexforge-companion.exe', { method: 'HEAD' })
     .then(function(r) {
       if (r.ok) {
@@ -510,18 +514,32 @@
         } else {
           winBtn.innerHTML = '⬇ Download';
         }
+        winStatus.textContent = 'Windows x86_64 — ready';
       } else {
-        // Build not ready — disable
-        winBtn.href = '#';
-        winBtn.style.background = 'rgba(255,255,255,0.06)';
-        winBtn.style.color = '#666';
-        winBtn.style.cursor = 'default';
-        winBtn.innerHTML = 'Build in progress...';
-        winStatus.textContent = 'Cross-compiling from Linux';
+        // Windows build not available — keep link to GitHub
+        winStatus.textContent = 'Via GitHub Releases';
       }
     })
     .catch(function() {
-      winStatus.textContent = 'Checking...';
+      winStatus.textContent = 'Via GitHub Releases';
+    });
+
+  // Check Linux build (no .exe extension — any binary file)
+  fetch('/download/', { method: 'GET' })
+    .then(function(r) { return r.text(); })
+    .then(function(html) {
+      // Look for a Linux/AppImage binary in the download page
+      if (html.indexOf('hexforge-companion') > -1 && html.indexOf('.exe') === -1 && html.indexOf('Build') > -1) {
+        linuxBtn.href = '/download/';
+        linuxBtn.classList.remove('secondary');
+        linuxBtn.innerHTML = '⬇ Download';
+        linuxStatus.textContent = 'Linux arm64 — ready';
+      } else if (html.indexOf('.exe') === -1) {
+        linuxStatus.textContent = 'Via GitHub Releases';
+      }
+    })
+    .catch(function() {
+      linuxStatus.textContent = 'Via GitHub Releases';
     });
 
   // ── Smooth scroll for anchor links ──
