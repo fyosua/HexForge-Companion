@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 
 export interface TftWindowInfo {
   x: number;
@@ -19,34 +19,104 @@ interface TftStatePayload {
   };
 }
 
+// —— Overlay window manager ———————————————————————————————————
+
+/**
+ * Resize and reposition the Tauri overlay window to match the
+ * TFT game window geometry, then ensure it's visible.
+ */
+async function snapToGameWindow(info: TftWindowInfo): Promise<void> {
+  try {
+    const { getCurrentWindow, LogicalSize, LogicalPosition } =
+      await import("@tauri-apps/api/window");
+
+    const win = getCurrentWindow();
+
+    // Move to match TFT window position
+    await win.setPosition(new LogicalPosition(info.x, info.y));
+
+    // Resize to match TFT window dimensions
+    await win.setSize(new LogicalSize(info.width, info.height));
+
+    // Ensure visible
+    await win.show();
+  } catch {
+    // Not in Tauri or API unavailable — silent
+  }
+}
+
+/**
+ * Hide the overlay window when TFT is not running.
+ */
+async function hideOverlay(): Promise<void> {
+  try {
+    const { getCurrentWindow } = await import("@tauri-apps/api/window");
+    const win = getCurrentWindow();
+    await win.hide();
+  } catch {
+    // Not in Tauri — silent
+  }
+}
+
+// —— Hook —————————————————————————————————————————
+
 /**
  * Hook that listens for TFT process attach/detach events from the
  * Rust backend's process watcher thread.
  *
- * On mount, starts listening for `tft-attached` and `tft-detached`
- * events. Returns the current connection state + window geometry.
+ * On mount, starts listening for \`tft-attached\` and \`tft-detached\`
+ * events. When attached with geometry info, automatically resizes
+ * and repositions the Tauri overlay to match the TFT game window.
+ * When detached, hides the overlay.
+ *
+ * Returns the current connection state + window geometry.
  */
-export function useTftWatcher() {
+export function useTftWatcher(options?: { autoManageWindow?: boolean }) {
+  const autoManage = options?.autoManageWindow ?? true;
   const [state, setState] = useState<TftConnectionState>("searching");
   const [windowInfo, setWindowInfo] = useState<TftWindowInfo | null>(null);
+  const lastAttachedRef = useRef<TftWindowInfo | null>(null);
 
-  const handleAttached = useCallback((payload: TftStatePayload) => {
-    const s = payload?.state;
-    setState("attached");
-    if (s && typeof s.x === "number") {
-      setWindowInfo({
-        x: s.x ?? 0,
-        y: s.y ?? 0,
-        width: s.width ?? 1920,
-        height: s.height ?? 1080,
-      });
-    }
-  }, []);
+  const handleAttached = useCallback(
+    (payload: TftStatePayload) => {
+      const s = payload?.state;
+      setState("attached");
+      if (s && typeof s.x === "number") {
+        const info: TftWindowInfo = {
+          x: s.x ?? 0,
+          y: s.y ?? 0,
+          width: s.width ?? 1920,
+          height: s.height ?? 1080,
+        };
+        setWindowInfo(info);
+
+        // Only snap if geometry actually changed
+        const prev = lastAttachedRef.current;
+        if (
+          autoManage &&
+          (!prev ||
+            prev.x !== info.x ||
+            prev.y !== info.y ||
+            prev.width !== info.width ||
+            prev.height !== info.height)
+        ) {
+          lastAttachedRef.current = info;
+          snapToGameWindow(info);
+        }
+      }
+    },
+    [autoManage]
+  );
 
   const handleDetached = useCallback(() => {
     setState("detached");
     setWindowInfo(null);
-  }, []);
+    lastAttachedRef.current = null;
+
+    if (autoManage) {
+      hideOverlay();
+    }
+  }, [autoManage]);
 
   useEffect(() => {
     let unlistenAttach: (() => void) | undefined;

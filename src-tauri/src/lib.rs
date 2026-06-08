@@ -22,7 +22,7 @@ pub struct AppState {
 fn print_startup_banner(api_mode: &api::ApiMode, db_path: &std::path::Path) {
     let version = env!("CARGO_PKG_VERSION");
     let name = env!("CARGO_PKG_NAME");
-    let separator = "═".repeat(52);
+    let separator = "\u{2550}".repeat(52);
 
     eprintln!("\n{}", separator);
     eprintln!("  {} v{}", name, version);
@@ -32,16 +32,16 @@ fn print_startup_banner(api_mode: &api::ApiMode, db_path: &std::path::Path) {
 
     match api_mode {
         api::ApiMode::Mock => {
-            eprintln!("  🔧 MODE: Mock (offline) — no API calls");
-            eprintln!("  ℹ️   Set RGAPI_KEY in .env for live data");
+            eprintln!("  \u{1f527} MODE: Mock (offline) \u{2014} no API calls");
+            eprintln!("  \u{2139}\u{fe0f}   Set RGAPI_KEY in .env for live data");
         }
         api::ApiMode::Direct { region, platform, .. } => {
-            eprintln!("  🔑 MODE: Direct — live Riot API");
+            eprintln!("  \u{1f511} MODE: Direct \u{2014} live Riot API");
             eprintln!("     region:   {}", region);
             eprintln!("     platform: {}", platform);
         }
         api::ApiMode::Proxy { proxy_base } => {
-            eprintln!("  🔒 MODE: Proxy — routed through backend");
+            eprintln!("  \u{1f512} MODE: Proxy \u{2014} routed through backend");
             eprintln!("     proxy: {}", proxy_base);
         }
     }
@@ -49,15 +49,79 @@ fn print_startup_banner(api_mode: &api::ApiMode, db_path: &std::path::Path) {
 }
 
 /// Print a non-blocking warning if running in release (production) mode
-/// without a live API key — the app will only show mock data.
+/// without a live API key \u{2014} the app will only show mock data.
 fn warn_if_production_mock(api_mode: &api::ApiMode) {
     if *api_mode == api::ApiMode::Mock && !cfg!(debug_assertions) {
         eprintln!(
-            "[HexForge] ⚠️  RELEASE BUILD running in MOCK mode — no RGAPI_KEY configured.\n\
-             [HexForge]    Create a .env file with RGAPI_KEY=... for live data, or\n\
+            "[HexForge] \u{26a0}\u{fe0f}  RELEASE BUILD running in MOCK mode \u{2014} no RGAPI_KEY configured.\n\
+             [HexForge]    Create a .env file with RGAPI_KEY=*** for live data, or\n\
              [HexForge]    set USE_MOCK=true in .env to silence this warning."
         );
     }
+}
+
+// \u{2014}\u{2014} System tray \u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}
+
+/// Build the system tray icon and menu.
+/// The tray provides show/hide/quit lifecycle control when the
+/// overlay auto-hides on TFT detach.
+fn setup_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    use tauri::{
+        menu::{Menu, MenuItem},
+        tray::TrayIconBuilder,
+    };
+
+    // Load the tray icon from bundled asset (ICO works cross-platform)
+    let icon = tauri::image::Image::from_bytes(include_bytes!("../icons/icon.ico"))
+        .expect("load tray icon");
+
+    let show = MenuItem::with_id(app, "show", "Show Overlay", true, None::<&str>)?;
+    let hide = MenuItem::with_id(app, "hide", "Hide Overlay", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", "Quit HexForge", true, None::<&str>)?;
+
+    let menu = Menu::with_items(app, &[&show, &hide, &quit])?;
+
+    TrayIconBuilder::new()
+        .icon(icon)
+        .tooltip("HexForge Companion")
+        .menu(&menu)
+        .on_menu_event(|app, event| match event.id().as_ref() {
+            "show" => {
+                if let Some(window) = app.get_webview_window("overlay") {
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+            }
+            "hide" => {
+                if let Some(window) = app.get_webview_window("overlay") {
+                    let _ = window.hide();
+                }
+            }
+            "quit" => {
+                app.exit(0);
+            }
+            _ => {}
+        })
+        .on_tray_icon_event(|tray, event| {
+            if matches!(
+                event,
+                tauri::tray::TrayIconEvent::DoubleClick {
+                    button: tauri::tray::MouseButton::Left,
+                    ..
+                }
+            ) {
+                if let Some(app) = tray.app_handle() {
+                    if let Some(window) = app.get_webview_window("overlay") {
+                        let _ = window.show();
+                        let _ = window.set_focus();
+                    }
+                }
+            }
+        })
+        .build(app)?;
+
+    eprintln!("[HexForge] Tray icon registered");
+    Ok(())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -93,7 +157,7 @@ pub fn run() {
         db_path.to_str().expect("valid db path"),
     ).expect("initialize SQLite database");
 
-    // ── Startup logging ───────────────────────────────
+    // \u{2014}\u{2014} Startup logging \u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}\u{2014}
     print_startup_banner(&api_mode, &db_path);
     warn_if_production_mock(&api_mode);
 
@@ -105,9 +169,17 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .setup(move |app| {
+            // Start TFT process watcher
             let handle = app.handle().clone();
             process_watcher::spawn_watcher(handle, 2000);
             eprintln!("[HexForge] Process watcher started (polling every 2s)");
+
+            // Register system tray (no tray on mobile)
+            #[cfg(desktop)]
+            if let Err(e) = setup_tray(app) {
+                eprintln!("[HexForge] Tray setup failed: {e}");
+            }
+
             Ok(())
         })
         .manage(AppState {
