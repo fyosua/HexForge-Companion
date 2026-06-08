@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
@@ -50,6 +50,24 @@ pub struct AccountDto {
     pub tag_line: Option<String>,
 }
 
+/// ACCOUNT-V1: Active shard (which platform cluster a player is on)
+#[derive(Debug, Default, Deserialize)]
+#[serde(default)]
+pub struct ActiveShardDto {
+    pub puuid: Option<String>,
+    pub game: Option<String>,
+    pub active_shard: Option<String>,
+}
+
+/// ACCOUNT-V1: Active region mapping
+#[derive(Debug, Default, Deserialize)]
+#[serde(default)]
+pub struct RegionDto {
+    pub puuid: Option<String>,
+    pub game: Option<String>,
+    pub region: Option<String>,
+}
+
 /// TFT-SUMMONER-V1: PUUID → platform summoner
 #[derive(Debug, Default, Deserialize)]
 #[serde(default)]
@@ -81,7 +99,7 @@ pub struct ParticipantInfo {
 }
 
 /// TFT-LEAGUE-V1: Ranked league entry
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct LeagueEntryDto {
     pub league_id: Option<String>,
@@ -97,6 +115,30 @@ pub struct LeagueEntryDto {
     pub inactive: Option<bool>,
     pub fresh_blood: Option<bool>,
     pub hot_streak: Option<bool>,
+    pub mini_series: Option<serde_json::Value>,
+}
+
+/// TFT-LEAGUE-V1: Challenger/Grandmaster/Master league DTO
+#[derive(Debug, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct LeagueListDto {
+    pub league_id: Option<String>,
+    pub tier: Option<String>,
+    pub queue: Option<String>,
+    pub name: Option<String>,
+    pub entries: Option<Vec<LeagueEntryDto>>,
+}
+
+/// TFT-LEAGUE-V1: Rated ladder entry (for rated-ladders endpoint)
+#[derive(Debug, Default, Deserialize)]
+#[serde(default)]
+pub struct RatedLadderEntryDto {
+    pub puuid: Option<String>,
+    pub summoner_id: Option<String>,
+    pub rated_rating: Option<f64>,
+    pub wins: Option<i64>,
+    pub losses: Option<i64>,
+    pub previous_update_time: Option<String>,
 }
 
 /// TFT-SPECTATOR-V5: Active game info (minimal — no opponent data for compliance).
@@ -121,6 +163,17 @@ pub struct ActiveGameParticipant {
     pub team_id: Option<i64>,
     /// Companion info — allowed because it's cosmetic, not strategic.
     pub companion: Option<serde_json::Value>,
+}
+
+/// TFT-STATUS-V1: Platform status
+#[derive(Debug, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct PlatformStatusDto {
+    pub id: Option<String>,
+    pub name: Option<String>,
+    pub locales: Option<Vec<String>>,
+    pub maintenances: Option<Vec<serde_json::Value>>,
+    pub incidents: Option<Vec<serde_json::Value>>,
 }
 
 // ── Mock helpers ──────────────────────────────────────────
@@ -150,9 +203,14 @@ fn read_mock_json<T: serde::de::DeserializeOwned>(filename: &str) -> Result<T, B
     Ok(serde_json::from_str(&content)?)
 }
 
-/// Helper: build platform-specific base URL for Direct mode.
+/// Helper: build platform-specific base URL for Direct mode (tft prefix).
 fn direct_url(platform: &str, path: &str) -> String {
     format!("https://{platform}.api.riotgames.com/tft{path}", platform = platform)
+}
+
+/// Helper: build platform-specific base URL for Direct mode (lol prefix).
+fn direct_lol_url(platform: &str, path: &str) -> String {
+    format!("https://{platform}.api.riotgames.com/lol{path}", platform = platform)
 }
 
 /// Helper: build regional base URL for Direct mode.
@@ -198,6 +256,71 @@ impl RiotApiClient {
             ApiMode::Proxy { proxy_base } => {
                 let url = format!("{}/api/riot/v1/riot/account/v1/accounts/by-riot-id/{}/{}", proxy_base, game_name, tag_line);
                 Ok(self.client.get(&url).send().await?.json::<AccountDto>().await?)
+            }
+        }
+    }
+
+    /// PUUID → account info
+    pub async fn get_account_by_puuid(
+        &self,
+        puuid: &str,
+    ) -> Result<AccountDto, Box<dyn std::error::Error>> {
+        match &self.mode {
+            ApiMode::Mock => read_mock_json("account.json"),
+            ApiMode::Direct { api_key, region, .. } => {
+                let url = region_url(region, &format!(
+                    "/riot/account/v1/accounts/by-puuid/{}", puuid
+                ));
+                let resp = self.client.get(&url).header("X-Riot-Token", api_key).send().await?;
+                Ok(resp.json::<AccountDto>().await?)
+            }
+            ApiMode::Proxy { proxy_base } => {
+                let url = format!("{}/api/riot/v1/riot/account/v1/accounts/by-puuid/{}", proxy_base, puuid);
+                Ok(self.client.get(&url).send().await?.json::<AccountDto>().await?)
+            }
+        }
+    }
+
+    /// Get active shard for a player in a given game (e.g. "tft")
+    pub async fn get_active_shard(
+        &self,
+        game: &str,
+        puuid: &str,
+    ) -> Result<ActiveShardDto, Box<dyn std::error::Error>> {
+        match &self.mode {
+            ApiMode::Mock => read_mock_json("active_shard.json"),
+            ApiMode::Direct { api_key, region, .. } => {
+                let url = region_url(region, &format!(
+                    "/riot/account/v1/active-shards/by-game/{}/by-puuid/{}", game, puuid
+                ));
+                let resp = self.client.get(&url).header("X-Riot-Token", api_key).send().await?;
+                Ok(resp.json::<ActiveShardDto>().await?)
+            }
+            ApiMode::Proxy { proxy_base } => {
+                let url = format!("{}/api/riot/v1/riot/account/v1/active-shards/by-game/{}/by-puuid/{}", proxy_base, game, puuid);
+                Ok(self.client.get(&url).send().await?.json::<ActiveShardDto>().await?)
+            }
+        }
+    }
+
+    /// Get active region for a player in a given game (e.g. "tft")
+    pub async fn get_region_by_puuid(
+        &self,
+        game: &str,
+        puuid: &str,
+    ) -> Result<RegionDto, Box<dyn std::error::Error>> {
+        match &self.mode {
+            ApiMode::Mock => read_mock_json("region.json"),
+            ApiMode::Direct { api_key, region, .. } => {
+                let url = region_url(region, &format!(
+                    "/riot/account/v1/region/by-game/{}/by-puuid/{}", game, puuid
+                ));
+                let resp = self.client.get(&url).header("X-Riot-Token", api_key).send().await?;
+                Ok(resp.json::<RegionDto>().await?)
+            }
+            ApiMode::Proxy { proxy_base } => {
+                let url = format!("{}/api/riot/v1/riot/account/v1/region/by-game/{}/by-puuid/{}", proxy_base, game, puuid);
+                Ok(self.client.get(&url).send().await?.json::<RegionDto>().await?)
             }
         }
     }
@@ -305,22 +428,121 @@ impl RiotApiClient {
 
     /// ── TFT-LEAGUE-V1 ─────────────────────────────────────
 
-    /// Get ranked league entries for a summoner.
-    pub async fn get_league_entries(
+    /// Get ranked league entries for a player by PUUID.
+    /// This replaces the old `entries/by-summoner/{id}` endpoint (now removed by Riot).
+    pub async fn get_league_entries_by_puuid(
         &self,
         platform: &str,
-        summoner_id: &str,
+        puuid: &str,
     ) -> Result<Vec<LeagueEntryDto>, Box<dyn std::error::Error>> {
         match &self.mode {
             ApiMode::Mock => read_mock_json("league_entries.json"),
             ApiMode::Direct { api_key, .. } => {
-                let url = direct_url(platform, &format!("/league/v1/entries/by-summoner/{}", summoner_id));
+                let url = direct_url(platform, &format!("/league/v1/by-puuid/{}", puuid));
                 let resp = self.client.get(&url).header("X-Riot-Token", api_key).send().await?;
                 Ok(resp.json::<Vec<LeagueEntryDto>>().await?)
             }
             ApiMode::Proxy { proxy_base } => {
-                let url = format!("{}/api/riot/v1/tft/league/v1/entries/by-summoner/{}", proxy_base, summoner_id);
+                let url = format!("{}/api/riot/v1/tft/league/v1/by-puuid/{}", proxy_base, puuid);
                 Ok(self.client.get(&url).send().await?.json::<Vec<LeagueEntryDto>>().await?)
+            }
+        }
+    }
+
+    /// Get the challenger league.
+    pub async fn get_challenger_league(
+        &self,
+        platform: &str,
+    ) -> Result<LeagueListDto, Box<dyn std::error::Error>> {
+        match &self.mode {
+            ApiMode::Mock => read_mock_json("challenger_league.json"),
+            ApiMode::Direct { api_key, .. } => {
+                let url = direct_url(platform, "/league/v1/challenger");
+                let resp = self.client.get(&url).header("X-Riot-Token", api_key).send().await?;
+                Ok(resp.json::<LeagueListDto>().await?)
+            }
+            ApiMode::Proxy { proxy_base } => {
+                let url = format!("{}/api/riot/v1/tft/league/v1/challenger", proxy_base);
+                Ok(self.client.get(&url).send().await?.json::<LeagueListDto>().await?)
+            }
+        }
+    }
+
+    /// Get the grandmaster league.
+    pub async fn get_grandmaster_league(
+        &self,
+        platform: &str,
+    ) -> Result<LeagueListDto, Box<dyn std::error::Error>> {
+        match &self.mode {
+            ApiMode::Mock => read_mock_json("grandmaster_league.json"),
+            ApiMode::Direct { api_key, .. } => {
+                let url = direct_url(platform, "/league/v1/grandmaster");
+                let resp = self.client.get(&url).header("X-Riot-Token", api_key).send().await?;
+                Ok(resp.json::<LeagueListDto>().await?)
+            }
+            ApiMode::Proxy { proxy_base } => {
+                let url = format!("{}/api/riot/v1/tft/league/v1/grandmaster", proxy_base);
+                Ok(self.client.get(&url).send().await?.json::<LeagueListDto>().await?)
+            }
+        }
+    }
+
+    /// Get the master league.
+    pub async fn get_master_league(
+        &self,
+        platform: &str,
+    ) -> Result<LeagueListDto, Box<dyn std::error::Error>> {
+        match &self.mode {
+            ApiMode::Mock => read_mock_json("master_league.json"),
+            ApiMode::Direct { api_key, .. } => {
+                let url = direct_url(platform, "/league/v1/master");
+                let resp = self.client.get(&url).header("X-Riot-Token", api_key).send().await?;
+                Ok(resp.json::<LeagueListDto>().await?)
+            }
+            ApiMode::Proxy { proxy_base } => {
+                let url = format!("{}/api/riot/v1/tft/league/v1/master", proxy_base);
+                Ok(self.client.get(&url).send().await?.json::<LeagueListDto>().await?)
+            }
+        }
+    }
+
+    /// Get all league entries for a tier/division (e.g. "DIAMOND", "II").
+    pub async fn get_league_entries_by_tier(
+        &self,
+        platform: &str,
+        tier: &str,
+        division: &str,
+    ) -> Result<Vec<LeagueEntryDto>, Box<dyn std::error::Error>> {
+        match &self.mode {
+            ApiMode::Mock => read_mock_json("league_entries_tier.json"),
+            ApiMode::Direct { api_key, .. } => {
+                let url = direct_url(platform, &format!("/league/v1/entries/{}/{}", tier, division));
+                let resp = self.client.get(&url).header("X-Riot-Token", api_key).send().await?;
+                Ok(resp.json::<Vec<LeagueEntryDto>>().await?)
+            }
+            ApiMode::Proxy { proxy_base } => {
+                let url = format!("{}/api/riot/v1/tft/league/v1/entries/{}/{}", proxy_base, tier, division);
+                Ok(self.client.get(&url).send().await?.json::<Vec<LeagueEntryDto>>().await?)
+            }
+        }
+    }
+
+    /// Get the top rated ladder for a given queue (e.g. "RANKED_TFT").
+    pub async fn get_rated_ladder_top(
+        &self,
+        platform: &str,
+        queue: &str,
+    ) -> Result<Vec<RatedLadderEntryDto>, Box<dyn std::error::Error>> {
+        match &self.mode {
+            ApiMode::Mock => read_mock_json("rated_ladder_top.json"),
+            ApiMode::Direct { api_key, .. } => {
+                let url = direct_url(platform, &format!("/league/v1/rated-ladders/{}/top", queue));
+                let resp = self.client.get(&url).header("X-Riot-Token", api_key).send().await?;
+                Ok(resp.json::<Vec<RatedLadderEntryDto>>().await?)
+            }
+            ApiMode::Proxy { proxy_base } => {
+                let url = format!("{}/api/riot/v1/tft/league/v1/rated-ladders/{}/top", proxy_base, queue);
+                Ok(self.client.get(&url).send().await?.json::<Vec<RatedLadderEntryDto>>().await?)
             }
         }
     }
@@ -330,6 +552,7 @@ impl RiotApiClient {
     /// Check if a player is currently in an active game.
     /// Returns `None` if the player is not in a game (HTTP 404 from Riot).
     /// This is a compliance-safe check — opponent data is NEVER exposed.
+    /// NOTE: The actual API path is under `/lol/spectator/tft/v5/`, not `/tft/spectator/v5/`.
     pub async fn get_active_game(
         &self,
         platform: &str,
@@ -341,7 +564,8 @@ impl RiotApiClient {
                 Ok(Some(dto))
             }
             ApiMode::Direct { api_key, .. } => {
-                let url = direct_url(platform, &format!("/spectator/v5/active-games/by-puuid/{}", puuid));
+                // CORRECT URL: /lol/spectator/tft/v5/active-games/by-puuid/{puuid}
+                let url = direct_lol_url(platform, &format!("/spectator/tft/v5/active-games/by-puuid/{}", puuid));
                 let resp = self.client.get(&url).header("X-Riot-Token", api_key).send().await?;
                 if resp.status() == 404 {
                     return Ok(None);
@@ -349,12 +573,33 @@ impl RiotApiClient {
                 Ok(Some(resp.json::<ActiveGameDto>().await?))
             }
             ApiMode::Proxy { proxy_base } => {
-                let url = format!("{}/api/riot/v1/tft/spectator/v5/active-games/by-puuid/{}", proxy_base, puuid);
+                let url = format!("{}/api/riot/v1/lol/spectator/tft/v5/active-games/by-puuid/{}", proxy_base, puuid);
                 let resp = self.client.get(&url).send().await?;
                 if resp.status() == 404 {
                     return Ok(None);
                 }
                 Ok(Some(resp.json::<ActiveGameDto>().await?))
+            }
+        }
+    }
+
+    /// ── TFT-STATUS-V1 ─────────────────────────────────────
+
+    /// Get platform status (maintenances, incidents).
+    pub async fn get_platform_status(
+        &self,
+        platform: &str,
+    ) -> Result<PlatformStatusDto, Box<dyn std::error::Error>> {
+        match &self.mode {
+            ApiMode::Mock => read_mock_json("platform_status.json"),
+            ApiMode::Direct { api_key, .. } => {
+                let url = direct_url(platform, "/status/v1/platform-data");
+                let resp = self.client.get(&url).header("X-Riot-Token", api_key).send().await?;
+                Ok(resp.json::<PlatformStatusDto>().await?)
+            }
+            ApiMode::Proxy { proxy_base } => {
+                let url = format!("{}/api/riot/v1/tft/status/v1/platform-data", proxy_base);
+                Ok(self.client.get(&url).send().await?.json::<PlatformStatusDto>().await?)
             }
         }
     }

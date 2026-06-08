@@ -6,6 +6,8 @@ import { MatchHistory } from "./components/MatchHistory";
 import { PlayerStats } from "./components/PlayerStats";
 import { RankDisplay } from "./components/RankDisplay";
 import { InGameIndicator } from "./components/InGameIndicator";
+import { LeaderboardDisplay } from "./components/LeaderboardDisplay";
+import { PlatformStatus } from "./components/PlatformStatus";
 import "./App.css";
 
 interface PlayerInfo {
@@ -122,6 +124,8 @@ function App() {
             <h2>{player.game_name}#{player.tag_line}</h2>
             <p>Summoner Level {player.summoner_level}</p>
             <InGameIndicator />
+            <PlatformStatus />
+            <LeaderboardDisplay />
             <RankDisplay />
             <PlayerStats />
             <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12 }}>

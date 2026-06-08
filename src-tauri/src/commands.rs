@@ -229,28 +229,22 @@ pub async fn refresh_matches(
 
 /// ── TFT-LEAGUE-V1 ────────────────────────────────────────
 
-/// Get ranked league info for the active player.
+/// Get ranked league info for the active player (by PUUID).
 #[tauri::command]
 pub async fn get_player_rank(
     state: State<'_, AppState>,
 ) -> Result<Vec<RankInfo>, String> {
-    let (_puuid, summoner_id, api_mode, platform) = {
+    let (puuid, api_mode, platform) = {
         let puuid = state.active_puuid.lock()
             .map_err(|e| e.to_string())?
             .clone()
             .ok_or("No player linked")?;
-        let conn = state.db.lock().map_err(|e| e.to_string())?;
-        let summoner_id: String = conn.query_row(
-            "SELECT summoner_id FROM players WHERE puuid = ?1",
-            rusqlite::params![puuid],
-            |row| row.get(0),
-        ).map_err(|e| format!("Player not found in DB: {}", e))?;
         let platform = std::env::var("RIOT_PLATFORM").unwrap_or_else(|_| "kr".into());
-        (puuid, summoner_id, state.api_mode.clone(), platform)
+        (puuid, state.api_mode.clone(), platform)
     };
 
     let client = RiotApiClient::new(api_mode);
-    let entries = client.get_league_entries(&platform, &summoner_id)
+    let entries = client.get_league_entries_by_puuid(&platform, &puuid)
         .await
         .map_err(|e| format!("League lookup failed: {}", e))?;
 
@@ -264,6 +258,95 @@ pub async fn get_player_rank(
     }).collect();
 
     Ok(ranks)
+}
+
+/// Get the active region for the linked player in TFT.
+#[tauri::command]
+pub async fn get_player_region(
+    state: State<'_, AppState>,
+) -> Result<String, String> {
+    let (puuid, api_mode) = {
+        let puuid = state.active_puuid.lock()
+            .map_err(|e| e.to_string())?
+            .clone()
+            .ok_or("No player linked")?;
+        (puuid, state.api_mode.clone())
+    };
+
+    let client = RiotApiClient::new(api_mode);
+    let region_dto = client.get_region_by_puuid("tft", &puuid)
+        .await
+        .map_err(|e| format!("Region lookup failed: {}", e))?;
+
+    Ok(region_dto.region.unwrap_or_else(|| "unknown".into()))
+}
+
+/// ── TFT-LEAGUE-V1: STANDINGS ─────────────────────────────
+
+/// Get the current Challenger league standings.
+#[tauri::command]
+pub async fn get_challenger_standings(
+    state: State<'_, AppState>,
+) -> Result<serde_json::Value, String> {
+    let api_mode = state.api_mode.clone();
+    let platform = std::env::var("RIOT_PLATFORM").unwrap_or_else(|_| "kr".into());
+
+    let client = RiotApiClient::new(api_mode);
+    let league = client.get_challenger_league(&platform)
+        .await
+        .map_err(|e| format!("Challenger league lookup failed: {}", e))?;
+
+    serde_json::to_value(&league).map_err(|e| format!("Serialization failed: {}", e))
+}
+
+/// Get the current Grandmaster league standings.
+#[tauri::command]
+pub async fn get_grandmaster_standings(
+    state: State<'_, AppState>,
+) -> Result<serde_json::Value, String> {
+    let api_mode = state.api_mode.clone();
+    let platform = std::env::var("RIOT_PLATFORM").unwrap_or_else(|_| "kr".into());
+
+    let client = RiotApiClient::new(api_mode);
+    let league = client.get_grandmaster_league(&platform)
+        .await
+        .map_err(|e| format!("Grandmaster league lookup failed: {}", e))?;
+
+    serde_json::to_value(&league).map_err(|e| format!("Serialization failed: {}", e))
+}
+
+/// Get the current Master league standings.
+#[tauri::command]
+pub async fn get_master_standings(
+    state: State<'_, AppState>,
+) -> Result<serde_json::Value, String> {
+    let api_mode = state.api_mode.clone();
+    let platform = std::env::var("RIOT_PLATFORM").unwrap_or_else(|_| "kr".into());
+
+    let client = RiotApiClient::new(api_mode);
+    let league = client.get_master_league(&platform)
+        .await
+        .map_err(|e| format!("Master league lookup failed: {}", e))?;
+
+    serde_json::to_value(&league).map_err(|e| format!("Serialization failed: {}", e))
+}
+
+/// ── TFT-STATUS-V1 ────────────────────────────────────────
+
+/// Get platform status (maintenances and incidents).
+#[tauri::command]
+pub async fn get_platform_status(
+    state: State<'_, AppState>,
+) -> Result<serde_json::Value, String> {
+    let api_mode = state.api_mode.clone();
+    let platform = std::env::var("RIOT_PLATFORM").unwrap_or_else(|_| "kr".into());
+
+    let client = RiotApiClient::new(api_mode);
+    let status = client.get_platform_status(&platform)
+        .await
+        .map_err(|e| format!("Platform status lookup failed: {}", e))?;
+
+    serde_json::to_value(&status).map_err(|e| format!("Serialization failed: {}", e))
 }
 
 /// ── TFT-SPECTATOR-V5 ─────────────────────────────────────

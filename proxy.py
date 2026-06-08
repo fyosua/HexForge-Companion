@@ -16,6 +16,11 @@ Endpoints:
   POST /api/get-player-rank
   POST /api/get-active-game-status
   POST /api/refresh-matches
+  POST /api/get-player-region
+  POST /api/get-challenger-standings
+  POST /api/get-grandmaster-standings
+  POST /api/get-master-standings
+  POST /api/get-platform-status
 """
 
 import json
@@ -68,6 +73,59 @@ MOCK_ACTIVE_GAME = {
     "game_start_time": None,
 }
 
+MOCK_REGION = {
+    "puuid": MOCK_PUUID,
+    "game": "tft",
+    "region": "asia",
+}
+
+MOCK_CHALLENGER = {
+    "tier": "CHALLENGER",
+    "queue": "RANKED_TFT",
+    "name": "HexForge Challengers",
+    "entries": [
+        {"puuid": "p1", "summoner_id": "s1", "tier": "CHALLENGER", "rank": "I", "league_points": 1423, "wins": 210, "losses": 145, "queue_type": "RANKED_TFT"},
+        {"puuid": "p2", "summoner_id": "s2", "tier": "CHALLENGER", "rank": "I", "league_points": 1387, "wins": 198, "losses": 152, "queue_type": "RANKED_TFT"},
+        {"puuid": "p3", "summoner_id": "s3", "tier": "CHALLENGER", "rank": "I", "league_points": 1356, "wins": 205, "losses": 148, "queue_type": "RANKED_TFT"},
+        {"puuid": "p4", "summoner_id": "s4", "tier": "CHALLENGER", "rank": "I", "league_points": 1298, "wins": 187, "losses": 160, "queue_type": "RANKED_TFT"},
+        {"puuid": "p5", "summoner_id": "s5", "tier": "CHALLENGER", "rank": "I", "league_points": 1219, "wins": 178, "losses": 169, "queue_type": "RANKED_TFT"},
+    ],
+}
+
+MOCK_GRANDMASTER = {
+    "tier": "GRANDMASTER",
+    "queue": "RANKED_TFT",
+    "name": "HexForge Grandmasters",
+    "entries": [
+        {"puuid": "p6", "summoner_id": "s6", "tier": "GRANDMASTER", "rank": "I", "league_points": 782, "wins": 165, "losses": 140, "queue_type": "RANKED_TFT"},
+        {"puuid": "p7", "summoner_id": "s7", "tier": "GRANDMASTER", "rank": "I", "league_points": 743, "wins": 158, "losses": 147, "queue_type": "RANKED_TFT"},
+        {"puuid": "p8", "summoner_id": "s8", "tier": "GRANDMASTER", "rank": "I", "league_points": 698, "wins": 152, "losses": 153, "queue_type": "RANKED_TFT"},
+        {"puuid": "p9", "summoner_id": "s9", "tier": "GRANDMASTER", "rank": "I", "league_points": 654, "wins": 148, "losses": 157, "queue_type": "RANKED_TFT"},
+        {"puuid": "p10", "summoner_id": "s10", "tier": "GRANDMASTER", "rank": "I", "league_points": 612, "wins": 143, "losses": 162, "queue_type": "RANKED_TFT"},
+    ],
+}
+
+MOCK_MASTER = {
+    "tier": "MASTER",
+    "queue": "RANKED_TFT",
+    "name": "HexForge Masters",
+    "entries": [
+        {"puuid": "p11", "summoner_id": "s11", "tier": "MASTER", "rank": "I", "league_points": 479, "wins": 138, "losses": 135, "queue_type": "RANKED_TFT"},
+        {"puuid": "p12", "summoner_id": "s12", "tier": "MASTER", "rank": "I", "league_points": 423, "wins": 132, "losses": 141, "queue_type": "RANKED_TFT"},
+        {"puuid": "p13", "summoner_id": "s13", "tier": "MASTER", "rank": "I", "league_points": 378, "wins": 128, "losses": 145, "queue_type": "RANKED_TFT"},
+        {"puuid": "p14", "summoner_id": "s14", "tier": "MASTER", "rank": "I", "league_points": 341, "wins": 125, "losses": 148, "queue_type": "RANKED_TFT"},
+        {"puuid": "p15", "summoner_id": "s15", "tier": "MASTER", "rank": "I", "league_points": 298, "wins": 121, "losses": 152, "queue_type": "RANKED_TFT"},
+    ],
+}
+
+MOCK_PLATFORM_STATUS = {
+    "id": "kr",
+    "name": "Korea",
+    "locales": ["ko_KR"],
+    "maintenances": [],
+    "incidents": [],
+}
+
 
 class MockAPIHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
@@ -96,15 +154,30 @@ class MockAPIHandler(http.server.BaseHTTPRequestHandler):
         elif parsed.path == "/api/get-player-stats":
             self._json(200, MOCK_STATS)
 
-        elif parsed.path in ("/api/get-player-rank", "/api/get-player-rank"):
+        elif parsed.path == "/api/get-player-rank":
             self._json(200, MOCK_RANK)
 
-        elif parsed.path in ("/api/get-active-game-status", "/api/get-active-game-status"):
+        elif parsed.path == "/api/get-active-game-status":
             self._json(200, MOCK_ACTIVE_GAME)
 
         elif parsed.path == "/api/refresh-matches":
             count = data.get("count", 10)
             self._json(200, {"fetched": count, "new_matches": min(3, count), "errors": 0})
+
+        elif parsed.path == "/api/get-player-region":
+            self._json(200, MOCK_REGION)
+
+        elif parsed.path == "/api/get-challenger-standings":
+            self._json(200, MOCK_CHALLENGER)
+
+        elif parsed.path == "/api/get-grandmaster-standings":
+            self._json(200, MOCK_GRANDMASTER)
+
+        elif parsed.path == "/api/get-master-standings":
+            self._json(200, MOCK_MASTER)
+
+        elif parsed.path == "/api/get-platform-status":
+            self._json(200, MOCK_PLATFORM_STATUS)
 
         else:
             self._json(404, {"error": "not found"})
@@ -136,6 +209,11 @@ if __name__ == "__main__":
     print(f"  POST /api/get-player-rank")
     print(f"  POST /api/get-active-game-status")
     print(f"  POST /api/refresh-matches")
+    print(f"  POST /api/get-player-region")
+    print(f"  POST /api/get-challenger-standings")
+    print(f"  POST /api/get-grandmaster-standings")
+    print(f"  POST /api/get-master-standings")
+    print(f"  POST /api/get-platform-status")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

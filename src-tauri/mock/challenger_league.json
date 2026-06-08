@@ -1,0 +1,83 @@
+{
+  "league_id": "challenger-league-kr-001",
+  "tier": "CHALLENGER",
+  "queue": "RANKED_TFT",
+  "name": "TFT Challenger (KR)",
+  "entries": [
+    {
+      "league_id": "challenger-league-kr-001",
+      "summoner_id": "SUM-A1B2C3D4E5F6G7H8I9J0K",
+      "puuid": "p1A2b3C4d5E6f7G8h9I0j1K2l3M4n5O6p7Q8r9S0t1U2v3W4x5Y6z7A8B9C0D",
+      "queue_type": "RANKED_TFT",
+      "tier": "CHALLENGER",
+      "rank": "I",
+      "league_points": 1423,
+      "wins": 214,
+      "losses": 178,
+      "veteran": true,
+      "inactive": false,
+      "fresh_blood": false,
+      "hot_streak": true
+    },
+    {
+      "league_id": "challenger-league-kr-001",
+      "summoner_id": "SUM-K2L3M4N5O6P7Q8R9S0T1U",
+      "puuid": "q2B3c4D5e6F7g8H9i0J1k2L3m4N5o6P7q8R9s0T1u2V3w4X5y6Z7a8B9C0D1E",
+      "queue_type": "RANKED_TFT",
+      "tier": "CHALLENGER",
+      "rank": "I",
+      "league_points": 1387,
+      "wins": 208,
+      "losses": 182,
+      "veteran": true,
+      "inactive": false,
+      "fresh_blood": false,
+      "hot_streak": true
+    },
+    {
+      "league_id": "challenger-league-kr-001",
+      "summoner_id": "SUM-F3G4H5I6J7K8L9M0N1O2P",
+      "puuid": "r3C4d5E6f7G8h9I0j1K2l3M4n5O6p7Q8r9S0t1U2v3W4x5Y6z7A8B9C0D1E2F",
+      "queue_type": "RANKED_TFT",
+      "tier": "CHALLENGER",
+      "rank": "I",
+      "league_points": 1298,
+      "wins": 195,
+      "losses": 190,
+      "veteran": true,
+      "inactive": false,
+      "fresh_blood": false,
+      "hot_streak": false
+    },
+    {
+      "league_id": "challenger-league-kr-001",
+      "summoner_id": "SUM-Q4R5S6T7U8V9W0X1Y2Z3A",
+      "puuid": "s4D5e6F7g8H9i0J1k2L3m4N5o6P7q8R9s0T1u2V3w4X5y6Z7a8B9C0D1E2F3G",
+      "queue_type": "RANKED_TFT",
+      "tier": "CHALLENGER",
+      "rank": "I",
+      "league_points": 1256,
+      "wins": 188,
+      "losses": 194,
+      "veteran": false,
+      "inactive": false,
+      "fresh_blood": false,
+      "hot_streak": true
+    },
+    {
+      "league_id": "challenger-league-kr-001",
+      "summoner_id": "SUM-B5C6D7E8F9G0H1I2J3K4L",
+      "puuid": "t5E6f7G8h9I0j1K2l3M4n5O6p7Q8r9S0t1U2v3W4x5Y6z7A8B9C0D1E2F3G4H",
+      "queue_type": "RANKED_TFT",
+      "tier": "CHALLENGER",
+      "rank": "I",
+      "league_points": 1219,
+      "wins": 182,
+      "losses": 199,
+      "veteran": true,
+      "inactive": false,
+      "fresh_blood": true,
+      "hot_streak": false
+    }
+  ]
+}
