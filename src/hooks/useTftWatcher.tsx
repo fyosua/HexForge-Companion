@@ -135,6 +135,11 @@ export function useTftWatcher(options?: { autoManageWindow?: boolean }) {
           "tft-detached",
           () => handleDetached()
         );
+
+        // Listen for cache-clear events (PUUID cleared after 30s detach)
+        await listen<{ reason: string }>("clear-puuid", () => {
+          setWindowInfo(null);
+        });
       } catch {
         // Not running inside Tauri — skip event listening
         setState("detached");

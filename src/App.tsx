@@ -59,6 +59,24 @@ function App() {
   const { state: tftState } = useTftWatcher();
   const updateInfo = useAppUpdater();
 
+  // Listen for clear-puuid event — reset player state after 30s detach
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    async function setup() {
+      try {
+        const { listen } = await import("@tauri-apps/api/event");
+        unlisten = await listen<{ reason: string }>("clear-puuid", () => {
+          setPlayer(null);
+          setError(null);
+          setRefreshCounter(0);
+          setPinned(false);
+        });
+      } catch { /* not in Tauri */ }
+    }
+    setup();
+    return () => { unlisten?.(); };
+  }, []);
+
   useEffect(() => {
     setInTauri(isTauri());
     if (!isTauri()) return;

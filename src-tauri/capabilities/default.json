@@ -10,6 +10,9 @@
     "shell:allow-open",
     "updater:default",
     "process:default",
-    "process:allow-relaunch"
+    "process:allow-relaunch",
+    "global-shortcut:default",
+    "global-shortcut:allow-register",
+    "global-shortcut:allow-unregister"
   ]
 }

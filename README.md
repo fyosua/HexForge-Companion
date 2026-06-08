@@ -18,6 +18,18 @@ Version **0.5.0** • Built with **Rust + Tauri v2** — no Overwolf, no bloat, 
 - 🛡️ **Riot-compliant** — no augment/legend win rates, no live scouting
 - 💾 **Local caching** — SQLite with WAL mode, 0.5s cold start
 
+## 💻 System Requirements
+
+| Platform | Minimum | Recommended |
+|----------|---------|-------------|
+| **Windows** | Windows 10 64-bit, 4GB RAM | Windows 11, 8GB RAM |
+| **macOS** | macOS 12.0+, 4GB RAM | macOS 14+, Apple Silicon |
+| **Linux** | GTK3, WebKit2GTK 4.1, 4GB RAM | Wayland, 8GB RAM |
+| **Storage** | 100MB free | 500MB free (for match history cache) |
+| **TFT** | Installed via Riot Client | Latest patch |
+
+**Runtime dependency:** [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) (Windows) or system WebKit (macOS/Linux) — installed automatically on most modern systems.
+
 ## 🚀 Quick Start
 
 ### Windows (recommended)

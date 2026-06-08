@@ -179,6 +179,33 @@ pub fn run() {
             app.handle().plugin(tauri_plugin_updater::Builder::new().build()).ok();
             app.handle().plugin(tauri_plugin_process::init());
 
+            // Register global shortcut (Ctrl+Shift+H) to toggle overlay visibility
+            #[cfg(desktop)]
+            {
+                let handle = app.handle().clone();
+                app.handle().plugin(
+                    tauri_plugin_global_shortcut::Builder::new()
+                        .with_handler(move |_app, shortcut, event| {
+                            if event == tauri_plugin_global_shortcut::ShortcutEvent::Pressed
+                                && shortcut.matches_modifiers(tauri_plugin_global_shortcut::Modifiers::CONTROL | tauri_plugin_global_shortcut::Modifiers::SHIFT)
+                                && shortcut.key_str() == Some("H")
+                            {
+                                if let Some(window) = _app.get_webview_window("overlay") {
+                                    if let Ok(visible) = window.is_visible() {
+                                        if visible {
+                                            let _ = window.hide();
+                                        } else {
+                                            let _ = window.show();
+                                            let _ = window.set_focus();
+                                        }
+                                    }
+                                }
+                            }
+                        }).build(),
+                ).ok();
+                eprintln!("[HexForge] Global shortcut Ctrl+Shift+H registered");
+            }
+
             // Register system tray (no tray on mobile)
             #[cfg(desktop)]
             if let Err(e) = setup_tray(app) {
