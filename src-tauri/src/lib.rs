@@ -13,6 +13,48 @@ pub struct AppState {
     pub active_puuid: Mutex<Option<String>>,
 }
 
+/// Print a formatted startup banner with version, mode, and paths.
+fn print_startup_banner(api_mode: &api::ApiMode, db_path: &std::path::Path) {
+    let version = env!("CARGO_PKG_VERSION");
+    let name = env!("CARGO_PKG_NAME");
+    let separator = "═".repeat(52);
+
+    eprintln!("\n{}", separator);
+    eprintln!("  {} v{}", name, version);
+    eprintln!("  PID: {}", std::process::id());
+    eprintln!("  DB:  {}", db_path.display());
+    eprintln!("{}", separator);
+
+    match api_mode {
+        api::ApiMode::Mock => {
+            eprintln!("  🔧 MODE: Mock (offline) — no API calls");
+            eprintln!("  ℹ️   Set RGAPI_KEY in .env for live data");
+        }
+        api::ApiMode::Direct { region, platform, .. } => {
+            eprintln!("  🔑 MODE: Direct — live Riot API");
+            eprintln!("     region:   {}", region);
+            eprintln!("     platform: {}", platform);
+        }
+        api::ApiMode::Proxy { proxy_base } => {
+            eprintln!("  🔒 MODE: Proxy — routed through backend");
+            eprintln!("     proxy: {}", proxy_base);
+        }
+    }
+    eprintln!("{}\n", separator);
+}
+
+/// Print a non-blocking warning if running in release (production) mode
+/// without a live API key — the app will only show mock data.
+fn warn_if_production_mock(api_mode: &api::ApiMode) {
+    if *api_mode == api::ApiMode::Mock && !cfg!(debug_assertions) {
+        eprintln!(
+            "[HexForge] ⚠️  RELEASE BUILD running in MOCK mode — no RGAPI_KEY configured.\n\
+             [HexForge]    Create a .env file with RGAPI_KEY=... for live data, or\n\
+             [HexForge]    set USE_MOCK=true in .env to silence this warning."
+        );
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Load .env file from project root (dev) or app data dir (prod)
@@ -46,16 +88,9 @@ pub fn run() {
         db_path.to_str().expect("valid db path"),
     ).expect("initialize SQLite database");
 
-    // Log startup mode
-    match &api_mode {
-        api::ApiMode::Mock => eprintln!("[HexForge] 🔧 Mock mode — no API calls will be made"),
-        api::ApiMode::Direct { region, platform, .. } => {
-            eprintln!("[HexForge] 🔑 Direct API mode — region={region}, platform={platform}");
-        }
-        api::ApiMode::Proxy { proxy_base } => {
-            eprintln!("[HexForge] 🔒 Proxy API mode — proxy={proxy_base}");
-        }
-    }
+    // ── Startup logging ───────────────────────────────
+    print_startup_banner(&api_mode, &db_path);
+    warn_if_production_mock(&api_mode);
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())

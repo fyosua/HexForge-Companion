@@ -1,22 +1,32 @@
 /* ── Reset & Base ─────────────────────────────────────── */
 body {
-  background: #0d0d1a;
+  background: transparent !important;
   margin: 0;
   padding: 0;
-  overflow: auto;
+  overflow: hidden;
   user-select: none;
 }
 
 .app-container {
   position: relative;
   width: 100vw;
-  min-height: 100vh;
-  background: #0d0d1a;
+  height: 100vh;
+  background: transparent;
   color: #f0f0f0;
   font-family: 'Segoe UI', system-ui, sans-serif;
+  pointer-events: none; /* everything passthrough by default */
 }
+
 /* ── Interactive override ─────────────────────────────── */
 .hex-hud-interactive {
+  pointer-events: auto;
+}
+
+/* Auto-enable all interactive elements inside the container */
+.app-container button,
+.app-container input,
+.app-container select,
+.app-container textarea {
   pointer-events: auto;
 }
 

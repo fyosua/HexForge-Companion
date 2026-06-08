@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/crates/tauri-cli/schema.json",
   "productName": "HexForge Companion",
-  "version": "0.1.0",
+  "version": "0.5.0",
   "identifier": "com.hexforge.companion",
   "build": {
     "beforeBuildCommand": "npm run build",
@@ -14,16 +14,20 @@
       {
         "label": "overlay",
         "title": "HexForge Companion",
-        "width": 1200,
-        "height": 800,
-        "decorations": true,
+        "width": 1920,
+        "height": 1080,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "focus": false,
+        "visible": true,
+        "skipTaskbar": true,
         "resizable": true,
-        "center": true,
-        "visible": true
+        "center": false
       }
     ],
     "security": {
-      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://ddragon.leagueoflegends.com https://raw.communitydragon.org https://static.developer.riotgames.com; connect-src 'self' https://*.api.riotgames.com https://*.proxy.riotgames.com; font-src 'self' data:"
     }
   },
   "bundle": {
@@ -36,12 +40,33 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "externalBin": [],
     "windows": {
       "webviewInstallMode": {
-        "type": "downloadBootstrapper"
+        "type": "downloadBootstrapper",
+        "silent": false
       },
       "nsis": {
-        "installMode": "currentUser"
+        "installMode": "currentUser",
+        "installerIcon": "icons/icon.ico",
+        "displayLanguageSelector": true,
+        "startMenuFolder": "HexForge Companion"
+      }
+    },
+    "macOS": {
+      "minimumSystemVersion": "12.0"
+    },
+    "linux": {
+      "deb": {
+        "depends": [
+          "libgtk-3-0",
+          "libwebkit2gtk-4.1-0",
+          "libsoup-3.0-0",
+          "librsvg2-2"
+        ]
+      },
+      "appimage": {
+        "bundleMediaFramework": true
       }
     }
   }

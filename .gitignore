@@ -22,7 +22,3 @@ dist/
 # OS
 .DS_Store
 Thumbs.db
-
-# Tauri
-src-tauri/icons/*.png
-src-tauri/icons/*.ico
