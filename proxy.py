@@ -166,8 +166,37 @@ class MockAPIHandler(http.server.BaseHTTPRequestHandler):
         elif parsed.path.startswith("/landing/"):
             self._serve_static(parsed.path)
 
+        # Favicon
+        elif parsed.path.startswith("/favicon-"):
+            self._serve_favicon(parsed.path)
+
         else:
             self._json(404, {"error": "not found"})
+
+    FAVICON_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "src-tauri", "icons")
+
+    def _serve_favicon(self, path):
+        """Serve favicon files from src-tauri/icons/."""
+        filename = os.path.basename(path)
+        filepath = os.path.join(self.FAVICON_DIR, filename)
+        if not os.path.isfile(filepath):
+            # Fallback to any available PNG
+            for f in ["32x32.png", "128x128.png"]:
+                fp = os.path.join(self.FAVICON_DIR, f)
+                if os.path.isfile(fp):
+                    filepath = fp
+                    break
+        if os.path.isfile(filepath):
+            with open(filepath, "rb") as f:
+                data = f.read()
+            mime = "image/png" if filepath.endswith(".png") else "image/x-icon"
+            self.send_response(200)
+            self.send_header("Content-Type", mime)
+            self.send_header("Cache-Control", "public, max-age=3600")
+            self.end_headers()
+            self.wfile.write(data)
+        else:
+            self._json(404, {"error": "favicon not found"})
 
     def _serve_landing(self, filename):
         """Serve a file from the landing/ directory."""
@@ -266,6 +295,10 @@ class MockAPIHandler(http.server.BaseHTTPRequestHandler):
 
         elif parsed.path == "/api/get-platform-status":
             self._json(200, MOCK_PLATFORM_STATUS)
+
+        # Favicon
+        elif parsed.path.startswith("/favicon-"):
+            self._serve_favicon(parsed.path)
 
         else:
             self._json(404, {"error": "not found"})

@@ -3,8 +3,38 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Primary Meta Tags -->
 <title>HexForge Companion — Lightweight TFT Overlay</title>
-<meta name="description" content="A privacy-first, transparent overlay for Teamfight Tactics. No Overwolf. No bloat. Zero telemetry.">
+<meta name="title" content="HexForge Companion — Lightweight TFT Overlay">
+<meta name="description" content="A privacy-first, transparent overlay for Teamfight Tactics. No Overwolf. No bloat. Zero telemetry. Rust + Tauri v2. Open source.">
+<meta name="keywords" content="TFT, Teamfight Tactics, overlay, companion, Riot Games, lightweight, Rust, Tauri">
+<meta name="author" content="HexForge Team">
+<meta name="application-name" content="HexForge Companion">
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://github.com/fyosua/HexForge-Companion">
+<meta property="og:title" content="HexForge Companion — Lightweight TFT Overlay">
+<meta property="og:description" content="A privacy-first, transparent overlay for Teamfight Tactics. No Overwolf. No bloat. Zero telemetry.">
+<meta property="og:image" content="https://raw.githubusercontent.com/fyosua/HexForge-Companion/main/landing/assets/overlay-mockup.svg">
+<meta property="og:image:width" content="1440">
+<meta property="og:image:height" content="900">
+
+<!-- Twitter -->
+<meta property="twitter:card" content="summary_large_image">
+<meta property="twitter:url" content="https://github.com/fyosua/HexForge-Companion">
+<meta property="twitter:title" content="HexForge Companion — Lightweight TFT Overlay">
+<meta property="twitter:description" content="A privacy-first, transparent overlay for Teamfight Tactics. No Overwolf. No bloat. Zero telemetry.">
+<meta property="twitter:image" content="https://raw.githubusercontent.com/fyosua/HexForge-Companion/main/landing/assets/overlay-mockup.svg">
+
+<!-- Favicon -->
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="128x128" href="/favicon-128x128.png">
+
+<!-- CSP allows Riot CDN for any live images -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://ddragon.leagueoflegends.com https://raw.communitydragon.org https://raw.githubusercontent.com; font-src 'self' data:; frame-src 'self' http://raspberrypi.local:1420; connect-src 'self' http://raspberrypi.local:1420 http://raspberrypi.local:1421;">
+
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
@@ -64,9 +94,32 @@
   .hero-cta small { font-weight: 400; font-size: 11px; opacity: 0.7; }
 
   .hero-secondary { margin-top: 16px; }
-  .hero-secondary a {
-    color: #666; font-size: 13px; margin: 0 12px;
+  .hero-secondary a { color: #666; font-size: 13px; margin: 0 12px; }
+
+  /* ── Live Demo ── */
+  .live-demo { padding: 60px 0; }
+  .live-demo h2 { text-align: center; font-size: 28px; margin-bottom: 32px; }
+  .demo-frame {
+    background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px; overflow: hidden; position: relative;
   }
+  .demo-frame iframe {
+    width: 100%; height: 600px; border: none;
+  }
+  .demo-unavailable {
+    display: none; text-align: center; padding: 80px 24px;
+  }
+  .demo-unavailable p { color: #666; font-size: 14px; margin-top: 8px; }
+  .demo-fallback { display: none; }
+  .demo-loading {
+    text-align: center; padding: 60px; color: #555; font-size: 14px;
+  }
+  .demo-spinner {
+    display: inline-block; width: 24px; height: 24px;
+    border: 2px solid rgba(255,255,255,0.1); border-top-color: #c8a84e;
+    border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 12px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
   /* ── Screenshot ── */
   .screenshot-section {
@@ -74,6 +127,7 @@
     background: linear-gradient(180deg, #070b14 0%, #0d1225 100%);
   }
   .screenshot-section .container { text-align: center; }
+  .screenshot-section h2 { font-size: 28px; margin-bottom: 32px; }
   .screenshot-section img {
     max-width: 100%; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06);
     box-shadow: 0 20px 60px rgba(0,0,0,0.5);
@@ -82,9 +136,7 @@
 
   /* ── Features ── */
   .features { padding: 80px 0; }
-  .features h2, .screenshot-section h2, .compliance h2, .download-section h2 {
-    text-align: center; font-size: 28px; margin-bottom: 48px;
-  }
+  .features h2 { text-align: center; font-size: 28px; margin-bottom: 48px; }
   .features h2 .gold { color: #c8a84e; }
   .feature-grid {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -117,7 +169,7 @@
 
   /* ── Compliance ── */
   .compliance { padding: 80px 0; }
-  .compliance h2 { margin-bottom: 32px; }
+  .compliance h2 { text-align: center; font-size: 28px; margin-bottom: 32px; }
   .compliance-grid {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 16px; max-width: 800px; margin: 0 auto;
@@ -129,7 +181,8 @@
   .compliance-item .check { color: #44ff44; margin-right: 8px; }
   .compliance-item strong { color: #c8a84e; }
   .compliance-note {
-    text-align: center; font-size: 11px; color: #555; margin-top: 24px; max-width: 600px; margin-left: auto; margin-right: auto;
+    text-align: center; font-size: 11px; color: #555; margin-top: 24px;
+    max-width: 600px; margin-left: auto; margin-right: auto;
   }
 
   /* ── Download ── */
@@ -137,7 +190,7 @@
     padding: 80px 0; text-align: center;
     background: radial-gradient(ellipse at 50% 100%, rgba(200,168,78,0.06) 0%, transparent 60%);
   }
-  .download-section h2 { margin-bottom: 16px; }
+  .download-section h2 { font-size: 28px; margin-bottom: 12px; }
   .download-section .sub { color: #888; font-size: 14px; margin-bottom: 32px; }
   .download-cards {
     display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;
@@ -155,6 +208,7 @@
   .download-btn:hover { background: #d4b85a; transform: translateY(-1px); text-decoration: none; }
   .download-btn.secondary { background: rgba(255,255,255,0.06); color: #aaa; }
   .download-btn.secondary:hover { background: rgba(255,255,255,0.1); }
+  .download-btn .build-status { font-weight: 400; font-size: 10px; opacity: 0.7; display: block; margin-top: 4px; }
 
   /* ── Footer ── */
   footer {
@@ -174,6 +228,7 @@
     .feature-grid { grid-template-columns: 1fr; }
     .steps { flex-direction: column; align-items: center; }
     .download-cards { flex-direction: column; align-items: center; }
+    .demo-frame iframe { height: 400px; }
   }
 </style>
 </head>
@@ -183,11 +238,12 @@
 <nav>
   <div class="logo">HexForge <span>Companion</span></div>
   <div>
+    <a href="#live">Live Demo</a>
     <a href="#features">Features</a>
     <a href="#how">How It Works</a>
     <a href="#compliance">Compliance</a>
     <a href="https://github.com/fyosua/HexForge-Companion" target="_blank">GitHub</a>
-    <a href="/download/" class="nav-cta">⬇ Download</a>
+    <a href="#download" class="nav-cta">⬇ Download</a>
   </div>
 </nav>
 
@@ -208,21 +264,49 @@
     <span class="hero-badge"><strong>Zero</strong> telemetry</span>
     <span class="hero-badge"><strong>Rust</strong> + Tauri v2</span>
   </div>
-  <a href="/download/" class="hero-cta">
-    ⬇ Download for Windows <small>v0.5.0 · 24 MB</small>
+  <a href="#download" class="hero-cta">
+    ⬇ Download for Windows <small>v0.5.0</small>
   </a>
   <div class="hero-secondary">
     <a href="https://github.com/fyosua/HexForge-Companion">View on GitHub →</a>
-    <a href="#features">Learn More ↓</a>
+    <a href="#live">Try Live Demo ↓</a>
+  </div>
+</section>
+
+<!-- Live Demo -->
+<section class="live-demo" id="live">
+  <div class="container">
+    <h2>Try It <span style="color:#c8a84e;">Live</span></h2>
+    <div class="demo-frame">
+      <div class="demo-loading" id="demo-loading">
+        <div class="demo-spinner"></div>
+        <p>Connecting to app server...</p>
+      </div>
+      <iframe id="demo-iframe" src="/app" title="HexForge Companion Live Demo"
+        loading="lazy" sandbox="allow-scripts allow-same-origin allow-forms"
+        onload="document.getElementById('demo-loading').style.display='none'; this.style.display='block';">
+      </iframe>
+      <div class="demo-unavailable" id="demo-unavailable">
+        <p>🔌 App server not available on this network.</p>
+        <p style="font-size:12px;color:#555;margin-top:8px;">
+          The live demo requires the Tauri app to be running on the same machine.
+          <br>Download the app instead or check back when the server is online.
+        </p>
+      </div>
+    </div>
   </div>
 </section>
 
 <!-- Screenshot -->
-<section class="screenshot-section" id="screenshot">
+<section class="screenshot-section">
   <div class="container">
     <h2>In-Game <span style="color:#c8a84e;">Overlay</span></h2>
-    <img src="/landing/assets/overlay-mockup.svg" alt="HexForge Companion overlay on TFT" style="max-width:100%;border-radius:8px;border:1px solid rgba(255,255,255,0.06);box-shadow:0 20px 60px rgba(0,0,0,0.5);">
-    <p class="screenshot-caption">Mockup: HexForge Companion overlay panels on the TFT battlefield.</p>
+    <img src="/landing/assets/overlay-mockup.svg" alt="HexForge Companion overlay on TFT battlefield"
+         style="max-width:100%;border-radius:8px;border:1px solid rgba(255,255,255,0.06);box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+    <p class="screenshot-caption">
+      Mockup: HexForge Companion overlay panels on the TFT battlefield.
+      Actual appearance may vary by TFT patch and window size.
+    </p>
   </div>
 </section>
 
@@ -253,7 +337,7 @@
       <div class="feature-card">
         <div class="feature-icon">📊</div>
         <h3>Live Rank &amp; Match Data</h3>
-        <p>View your rank, LP, win/loss, match history, and aggregated stats — all pulled from the Riot API. Pinned widget for at-a-glance data.</p>
+        <p>View your rank, LP, win/loss, match history, and aggregated stats. Pinned widget for at-a-glance data.</p>
       </div>
 
       <div class="feature-card">
@@ -280,12 +364,12 @@
       <div class="step">
         <div class="step-num">1</div>
         <h3>Download &amp; Run</h3>
-        <p>No installation wizard needed. Download, unzip, run. Works immediately in Mock mode with no API key.</p>
+        <p>Download the installer, run it. Works immediately in Mock mode — no API key, no configuration needed.</p>
       </div>
       <div class="step">
         <div class="step-num">2</div>
         <h3>Launch TFT</h3>
-        <p>The overlay detects TFT starting up, snaps to the game window, and appears as a transparent HUD.</p>
+        <p>The overlay detects TFT starting up, snaps to the game window, and appears as a transparent HUD on top.</p>
       </div>
       <div class="step">
         <div class="step-num">3</div>
@@ -295,7 +379,7 @@
       <div class="step">
         <div class="step-num">4</div>
         <h3>Pin or Browse</h3>
-        <p>Pin a compact widget for at-a-glance data, or browse the full dashboard with leaderboards and server status.</p>
+        <p>Pin a compact widget for at-a-glance data, or explore the full dashboard with leaderboards and server status.</p>
       </div>
     </div>
   </div>
@@ -310,11 +394,11 @@
       <div class="compliance-item"><span class="check">✓</span> <strong>No Live Scouting</strong> — Spectator endpoint never called. No opponent data during games.</div>
       <div class="compliance-item"><span class="check">✓</span> <strong>No Decision Dictation</strong> — Displays data only. Never tells users what to play or build.</div>
       <div class="compliance-item"><span class="check">✓</span> <strong>Legal Boilerplate</strong> — Riot Games legal disclaimer on every dashboard view.</div>
-      <div class="compliance-item"><span class="check">✓</span> <strong>GDPR One-Click Wipe</strong> — Delete all stored account data from the app with one command.</div>
-      <div class="compliance-item"><span class="check">✓</span> <strong>Read-Only Process Detection</strong> — Uses standard OS APIs (FindWindowW / CreateToolhelp32Snapshot only). No memory scanning or DLL injection.</div>
+      <div class="compliance-item"><span class="check">✓</span> <strong>GDPR One-Click Wipe</strong> — Delete all stored account data with one command.</div>
+      <div class="compliance-item"><span class="check">✓</span> <strong>Read-Only Process Detection</strong> — Standard OS APIs only. No memory scanning or DLL injection.</div>
     </div>
     <p class="compliance-note">
-      Full compliance audit available in <a href="https://github.com/fyosua/HexForge-Companion/blob/main/docs/COMPLIANCE.md">docs/COMPLIANCE.md</a>.
+      Full compliance audit available in <a href="https://github.com/fyosua/HexForge-Companion/blob/main/docs/COMPLIANCE.md" target="_blank">docs/COMPLIANCE.md</a>.
     </p>
   </div>
 </section>
@@ -328,22 +412,42 @@
       <div class="download-card">
         <h3>⬇ Windows</h3>
         <p class="plat">x86_64 · NSIS Installer</p>
-        <a href="/download/hexforge-companion.exe" class="download-btn" id="win-btn">⬇ Download .exe</a>
-        <p class="plat" style="margin-top:8px;font-size:10px;color:#555;">~24 MB · WebView2 auto-installed</p>
+        <a href="/download/" class="download-btn" id="win-dl-btn">
+          ⬇ Download <span class="build-status" id="win-build-status">Checking build status...</span>
+        </a>
       </div>
       <div class="download-card">
         <h3>🐧 Linux</h3>
-        <p class="plat">x86_64 · deb / AppImage</p>
-        <a href="https://github.com/fyosua/HexForge-Companion/releases" class="download-btn secondary" target="_blank">View Releases →</a>
+        <p class="plat">x86_64 · .deb / AppImage</p>
+        <a href="https://github.com/fyosua/HexForge-Companion/releases" class="download-btn secondary" target="_blank">
+          View Releases →
+        </a>
       </div>
       <div class="download-card">
         <h3>🍎 macOS</h3>
-        <p class="plat">arm64 + x86_64 · dmg</p>
-        <a href="https://github.com/fyosua/HexForge-Companion/releases" class="download-btn secondary" target="_blank">View Releases →</a>
+        <p class="plat">arm64 + x86_64 · .dmg</p>
+        <a href="https://github.com/fyosua/HexForge-Companion/releases" class="download-btn secondary" target="_blank">
+          View Releases →
+        </a>
       </div>
     </div>
+
+    <!-- Optional: API key setup -->
+    <div style="margin-top:32px;max-width:500px;margin-left:auto;margin-right:auto;text-align:left;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:6px;padding:20px;">
+      <h4 style="font-size:13px;color:#c8a84e;margin-bottom:8px;">Optional: Live Data via Riot API</h4>
+      <ol style="font-size:12px;color:#888;line-height:1.8;padding-left:20px;">
+        <li>Get a free <a href="https://developer.riotgames.com/" target="_blank">Riot Dev API Key</a></li>
+        <li>Create <code style="background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:3px;">.env</code> next to the .exe: <code style="background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:3px;">RGAPI_KEY=RGAPI-...</code></li>
+        <li>Restart — automatically switches to live API mode</li>
+      </ol>
+      <p style="font-size:10px;color:#555;margin-top:8px;">No API key? Mock mode uses built-in sample data for all features.</p>
+    </div>
+
     <p style="font-size:11px;color:#555;margin-top:24px;">
-      Or build from source: <code style="background:rgba(255,255,255,0.06);padding:2px 8px;border-radius:3px;">git clone https://github.com/fyosua/HexForge-Companion</code>
+      Or build from source:
+      <code style="background:rgba(255,255,255,0.06);padding:2px 8px;border-radius:3px;font-size:11px;">
+        git clone https://github.com/fyosua/HexForge-Companion
+      </code>
     </p>
   </div>
 </section>
@@ -358,30 +462,79 @@
     <a href="https://github.com/fyosua/HexForge-Companion/blob/main/LICENSE">MIT License</a>
     <a href="https://github.com/fyosua/HexForge-Companion/blob/main/docs/COMPLIANCE.md">Compliance</a>
     <a href="https://github.com/fyosua/HexForge-Companion/blob/main/docs/ARCHITECTURE.md">Architecture</a>
+    <a href="https://github.com/fyosua/HexForge-Companion/blob/main/docs/API.md">API Docs</a>
   </div>
 </footer>
 
 <script>
-  // Check if the Windows binary exists; if not, show placeholder
-  fetch('/api/health')
-    .then(r => r.json())
-    .then(d => {
-      if (d.mode === 'mock') {
-        // Backend is running — good
-      }
-    })
-    .catch(() => {});
+(function() {
+  'use strict';
 
-  // Check if download exists
-  fetch('/download/hexforge-companion.exe', { method: 'HEAD' })
-    .then(r => {
-      if (!r.ok) {
-        document.getElementById('win-btn').innerText = '⬇ Build in Progress...';
-        document.getElementById('win-btn').style.pointerEvents = 'none';
-        document.getElementById('win-btn').style.opacity = '0.5';
+  // ── Live demo: fallback if iframe fails to load ──
+  var iframe = document.getElementById('demo-iframe');
+  var loadingEl = document.getElementById('demo-loading');
+  var unavailableEl = document.getElementById('demo-unavailable');
+
+  // Check if the app server is reachable
+  var healthCheck = new Image();
+  healthCheck.onload = function() {
+    // App server reachable — iframe will load
+  };
+  healthCheck.onerror = function() {
+    // App server not reachable — show fallback
+    loadingEl.style.display = 'none';
+    unavailableEl.style.display = 'block';
+  };
+  // Ping the app server via the web app redirect (will return 302 or 200)
+  fetch('/app', { method: 'HEAD', mode: 'same-origin' })
+    .then(function(r) {
+      if (r.status >= 200 && r.status < 400) {
+        loadingEl.style.display = 'none';
       }
     })
-    .catch(() => {});
+    .catch(function() {
+      loadingEl.style.display = 'none';
+      unavailableEl.style.display = 'block';
+    });
+
+  // ── Download status: check if .exe exists ──
+  var winBtn = document.getElementById('win-dl-btn');
+  var winStatus = document.getElementById('win-build-status');
+  fetch('/download/hexforge-companion.exe', { method: 'HEAD' })
+    .then(function(r) {
+      if (r.ok) {
+        var size = r.headers.get('Content-Length');
+        if (size) {
+          var mb = (parseInt(size) / 1024 / 1024).toFixed(1);
+          winBtn.innerHTML = '⬇ Download (' + mb + ' MB)';
+        } else {
+          winBtn.innerHTML = '⬇ Download';
+        }
+      } else {
+        // Build not ready — disable
+        winBtn.href = '#';
+        winBtn.style.background = 'rgba(255,255,255,0.06)';
+        winBtn.style.color = '#666';
+        winBtn.style.cursor = 'default';
+        winBtn.innerHTML = 'Build in progress...';
+        winStatus.textContent = 'Cross-compiling from Linux';
+      }
+    })
+    .catch(function() {
+      winStatus.textContent = 'Checking...';
+    });
+
+  // ── Smooth scroll for anchor links ──
+  document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
+    anchor.addEventListener('click', function(e) {
+      var target = document.querySelector(this.getAttribute('href'));
+      if (target) {
+        e.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+})();
 </script>
 
 </body>
