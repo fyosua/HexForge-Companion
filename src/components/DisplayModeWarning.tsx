@@ -8,18 +8,15 @@ export function DisplayModeWarning() {
   return (
     <div
       style={{
-        position: "fixed",
-        top: 48,
-        left: 0,
-        right: 0,
         background: "#b8860b",
         color: "#000",
         padding: "6px 16px",
         fontSize: 12,
-        zIndex: 200,
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
+        marginBottom: 8,
+        borderRadius: 4,
       }}
       className="hex-hud-interactive"
     >

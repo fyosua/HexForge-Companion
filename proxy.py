@@ -26,9 +26,20 @@ Endpoints:
 import json
 import http.server
 import urllib.parse
+import os
+import glob
 
 HOST = "0.0.0.0"
 PORT = 1421
+
+# Directory where built binaries are placed
+DOWNLOAD_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "src-tauri",
+    "target",
+    "x86_64-pc-windows-gnu",
+    "release",
+)
 
 MOCK_PUUID = "S7vF9kG2hJ5mN8qR3tW1xZ4cB6yA0dE8fL7pO2iU9sK4jH5gF3vB1nM6xC0zR"
 
@@ -132,6 +143,8 @@ class MockAPIHandler(http.server.BaseHTTPRequestHandler):
         parsed = urllib.parse.urlparse(self.path)
         if parsed.path == "/api/health":
             self._json(200, {"status": "ok", "mode": "mock"})
+        elif parsed.path.startswith("/download/"):
+            self._serve_download(parsed.path)
         else:
             self._json(404, {"error": "not found"})
 
@@ -181,6 +194,77 @@ class MockAPIHandler(http.server.BaseHTTPRequestHandler):
 
         else:
             self._json(404, {"error": "not found"})
+
+    def _serve_download(self, path):
+        """Serve download page or binary file."""
+        # If requesting the .exe itself
+        if path.endswith(".exe"):
+            exe_path = os.path.join(DOWNLOAD_DIR, "hexforge-companion.exe")
+            if os.path.exists(exe_path):
+                file_size = os.path.getsize(exe_path)
+                self.send_response(200)
+                self.send_header("Content-Type", "application/octet-stream")
+                self.send_header("Content-Disposition", 'attachment; filename="hexforge-companion.exe"')
+                self.send_header("Content-Length", str(file_size))
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                with open(exe_path, "rb") as f:
+                    self.wfile.write(f.read())
+                return
+            self._json(404, {"error": "Binary not found — build may still be in progress."})
+            return
+
+        # Serve download page
+        exe_exists = os.path.exists(os.path.join(DOWNLOAD_DIR, "hexforge-companion.exe"))
+        exe_size = 0
+        if exe_exists:
+            exe_size = os.path.getsize(os.path.join(DOWNLOAD_DIR, "hexforge-companion.exe"))
+
+        page = f"""<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8">
+<title>HexForge Companion — Download</title>
+<style>
+  body {{ background: #0d0d1a; color: #f0f0f0; font-family: 'Segoe UI', sans-serif; margin: 40px; text-align: center; }}
+  .card {{ background: rgba(0,0,0,0.45); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 24px; max-width: 500px; margin: 40px auto; }}
+  h1 {{ color: #c8a84e; font-size: 18px; }}
+  .btn {{ display: inline-block; background: #c8a84e; color: #000; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: 700; margin: 12px 0; }}
+  .btn:hover {{ background: #d4b85a; }}
+  .btn:disabled {{ opacity: 0.4; cursor: not-allowed; }}
+  .status {{ font-size: 12px; color: #888; margin: 8px 0; }}
+  .info {{ font-size: 11px; color: #555; text-align: left; margin-top: 16px; }}
+  .info li {{ margin: 4px 0; }}
+  .footer {{ font-size: 9px; color: rgba(255,255,255,0.2); margin-top: 24px; }}
+</style></head>
+<body>
+  <div class="card">
+    <h1>⬇ HexForge Companion</h1>
+    <p style="color:#aaa;font-size:13px;">Windows x86_64 — Release Build</p>
+    {f'<a class="btn" href="/download/hexforge-companion.exe">Download .exe ({exe_size // 1024 // 1024} MB)</a>' if exe_exists else '<button class="btn" disabled>Build in progress...</button>'}
+    <div class="status">{f'✅ Build complete — {exe_size // 1024 // 1024} MB' if exe_exists else '⏳ Cross-compilation is running...'}</div>
+    <div class="info">
+      <strong>Requirements:</strong>
+      <ul>
+        <li>Windows 10+ (x86_64)</li>
+        <li>WebView2 Runtime (pre-installed on Windows 10+)</li>
+        <li>Riot Games API key for live data</li>
+      </ul>
+      <strong>Setup:</strong>
+      <ol>
+        <li>Download the .exe</li>
+        <li>Create a <code>.env</code> file next to it with <code>RGAPI_KEY=...</code></li>
+        <li>Run the binary</li>
+      </ol>
+    </div>
+    <p style="font-size:10px;color:#555;">Built from <a href="https://github.com/fyosua/HexForge-Companion" style="color:#5dade2;">github.com/fyosua/HexForge-Companion</a></p>
+  </div>
+  <div class="footer">HexForge Companion isn't endorsed by Riot Games.</div>
+</body></html>"""
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+        self.wfile.write(page.encode())
 
     def _json(self, status, obj):
         self.send_response(status)

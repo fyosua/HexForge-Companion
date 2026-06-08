@@ -140,7 +140,6 @@ function App() {
 
   return (
     <div className="app-container">
-      <DisplayModeWarning />
       {!inTauri && (
         <div className="hex-browser-banner">
           ⚡ Browser preview — mock API on port 1421.
@@ -163,6 +162,7 @@ function App() {
       )}
 
       <main className="hex-main" style={pinned ? { paddingTop: 8 } : undefined}>
+        <DisplayModeWarning />
         <PlayerSearch onPlayerResolved={handlePlayerResolved} onError={setError} />
         {error && <div className="hex-error">{error}</div>}
 
@@ -185,8 +185,8 @@ function App() {
             <InGameIndicator />
             <PlatformStatus />
             <LeaderboardDisplay />
-            <RankDisplay key={refreshCounter} />
-            <PlayerStats key={refreshCounter} />
+            <RankDisplay key={`rank-${refreshCounter}`} />
+            <PlayerStats key={`stats-${refreshCounter}`} />
 
             <div className="hex-refresh-bar">
               <button
@@ -205,7 +205,7 @@ function App() {
               </button>
             </div>
 
-            <MatchHistory key={refreshCounter} />
+            <MatchHistory key={`history-${refreshCounter}`} />
           </div>
         )}
 

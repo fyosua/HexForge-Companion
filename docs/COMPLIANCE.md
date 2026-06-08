@@ -18,7 +18,7 @@ This document details how HexForge Companion complies with every Riot Games Thir
 | Qualitative guides only | The frontend can display static tier lists compiled by professional players — these are hardcoded metadata, not calculated from match history |
 | Legal boilerplate | `LegalFooter.tsx` displays Riot's disclaimer on every UI pane |
 
-**Verification**: All stats queries in `commands.rs` aggregate only placement values. Augment rows are stored but never SELECT'd for computation.
+**Verification**: All stats queries in `commands.rs` aggregate only placement values. Augment rows are stored but never SELECT'd for computation. The `matches` schema stores `augments TEXT` as a raw JSON blob — it is never parsed, aggregated, or displayed in the UI.
 
 ---
 
@@ -35,8 +35,11 @@ This document details how HexForge Companion complies with every Riot Games Thir
 | No loading screen tracking | Overlay remains in passthrough mode until user interacts |
 | Static metadata only | Pre-game display shows only static unit/trait tables from Data Dragon |
 | Passive architecture | All data flows are **player-initiated** — the app does nothing without user interaction |
+| **Live Match Status indicator** | `InGameIndicator.tsx` shows only a green/red dot + game start time. NO opponent PUUIDs, NO board composition, NO champion levels, NO items, NO augments. The underlying `get_active_game_status` IPC command calls TFT-SPECTATOR-V5 but extracts only `in_game: bool` and `game_start_time` from the response. Opponent data is parsed but never exposed to the frontend. |
 
 **Architecture verification**: The IPC command list contains no "scout" or "lobby" commands. The overlay defaults to cursor passthrough (`set_ignore_cursor_events(true)`).
+
+**Leaderboard display compliance**: `LeaderboardDisplay.tsx` shows only **public** Challenger, Grandmaster, and Master standings fetched via `GET /tft/league/v1/{challenger|grandmaster|master}`. These are aggregate leaderboards that Riot publishes publicly — no individual player targeting, no scouting, no live opponent tracking. Displaying public leaderboard data is explicitly allowable under Riot's policy.
 
 ---
 
