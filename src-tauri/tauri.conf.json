@@ -50,8 +50,7 @@
         "installMode": "currentUser",
         "installerIcon": "icons/icon.ico",
         "displayLanguageSelector": true,
-        "startMenuFolder": "HexForge Companion",
-        "license": "../LICENSE"
+        "startMenuFolder": "HexForge Companion"
       }
     },
     "macOS": {
