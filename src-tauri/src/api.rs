@@ -247,9 +247,39 @@ impl RiotApiClient {
         match &self.mode {
             ApiMode::Mock => read_mock_json("account.json"),
             ApiMode::Direct { api_key, region, .. } => {
-                let url = region_url(region, &format!(
-                    "/riot/account/v1/accounts/by-riot-id/{}/{}", game_name, tag_line
-                ));
+                let url = format!(
+                    "https://{region}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{game}/{tag}",
+                    region = region,
+                    game = game_name,
+                    tag = tag_line
+                );
+                let resp = self.client.get(&url).header("X-Riot-Token", api_key).send().await?;
+                Ok(resp.json::<AccountDto>().await?)
+            }
+            ApiMode::Proxy { proxy_base } => {
+                let url = format!("{}/api/riot/v1/riot/account/v1/accounts/by-riot-id/{}/{}", proxy_base, game_name, tag_line);
+                Ok(self.client.get(&url).send().await?.json::<AccountDto>().await?)
+            }
+        }
+    }
+
+    /// Resolve PUUID using an explicit region (overrides the mode's default region).
+    /// Use this when the correct region differs from the mode's default (e.g. SG2→sea).
+    pub async fn resolve_puuid_with_region(
+        &self,
+        game_name: &str,
+        tag_line: &str,
+        region: &str,
+    ) -> Result<AccountDto, Box<dyn std::error::Error>> {
+        match &self.mode {
+            ApiMode::Mock => read_mock_json("account.json"),
+            ApiMode::Direct { api_key, .. } => {
+                let url = format!(
+                    "https://{region}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{game}/{tag}",
+                    region = region,
+                    game = game_name,
+                    tag = tag_line
+                );
                 let resp = self.client.get(&url).header("X-Riot-Token", api_key).send().await?;
                 Ok(resp.json::<AccountDto>().await?)
             }

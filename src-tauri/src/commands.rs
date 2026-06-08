@@ -79,8 +79,8 @@ pub async fn resolve_player(
 
     let client = RiotApiClient::new(api_mode);
 
-    // Step 1: account lookup (PUUID)
-    let account = client.resolve_puuid(&game_name, &tag_line)
+    // Step 1: account lookup (PUUID) — use derived region for correct routing
+    let account = client.resolve_puuid_with_region(&game_name, &tag_line, &region)
         .await
         .map_err(|e| format!("Riot account lookup failed: {}", e))?;
 
