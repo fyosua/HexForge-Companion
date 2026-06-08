@@ -96,31 +96,6 @@
   .hero-secondary { margin-top: 16px; }
   .hero-secondary a { color: #666; font-size: 13px; margin: 0 12px; }
 
-  /* ── Live Demo ── */
-  .live-demo { padding: 60px 0; }
-  .live-demo h2 { text-align: center; font-size: 28px; margin-bottom: 32px; }
-  .demo-frame {
-    background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 8px; overflow: hidden; position: relative;
-  }
-  .demo-frame iframe {
-    width: 100%; height: 600px; border: none;
-  }
-  .demo-unavailable {
-    display: none; text-align: center; padding: 80px 24px;
-  }
-  .demo-unavailable p { color: #666; font-size: 14px; margin-top: 8px; }
-  .demo-fallback { display: none; }
-  .demo-loading {
-    text-align: center; padding: 60px; color: #555; font-size: 14px;
-  }
-  .demo-spinner {
-    display: inline-block; width: 24px; height: 24px;
-    border: 2px solid rgba(255,255,255,0.1); border-top-color: #c8a84e;
-    border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 12px;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
   /* ── Screenshot ── */
   .screenshot-section {
     padding: 60px 0;
@@ -228,7 +203,6 @@
     .feature-grid { grid-template-columns: 1fr; }
     .steps { flex-direction: column; align-items: center; }
     .download-cards { flex-direction: column; align-items: center; }
-    .demo-frame iframe { height: 400px; }
   }
 </style>
 </head>
@@ -238,7 +212,6 @@
 <nav>
   <div class="logo">HexForge <span>Companion</span></div>
   <div>
-    <a href="#live">Live Demo</a>
     <a href="#features">Features</a>
     <a href="#how">How It Works</a>
     <a href="#compliance">Compliance</a>
@@ -269,31 +242,6 @@
   </a>
   <div class="hero-secondary">
     <a href="https://github.com/fyosua/HexForge-Companion">View on GitHub →</a>
-    <a href="#live">Try Live Demo ↓</a>
-  </div>
-</section>
-
-<!-- Live Demo -->
-<section class="live-demo" id="live">
-  <div class="container">
-    <h2>Try It <span style="color:#c8a84e;">Live</span></h2>
-    <div class="demo-frame">
-      <div class="demo-loading" id="demo-loading">
-        <div class="demo-spinner"></div>
-        <p>Connecting to app server...</p>
-      </div>
-      <iframe id="demo-iframe" src="/app" title="HexForge Companion Live Demo"
-        loading="lazy" sandbox="allow-scripts allow-same-origin allow-forms"
-        onload="document.getElementById('demo-loading').style.display='none'; this.style.display='block';">
-      </iframe>
-      <div class="demo-unavailable" id="demo-unavailable">
-        <p>🔌 App server not available on this network.</p>
-        <p style="font-size:12px;color:#555;margin-top:8px;">
-          The live demo requires the Tauri app to be running on the same machine.
-          <br>Download the app instead or check back when the server is online.
-        </p>
-      </div>
-    </div>
   </div>
 </section>
 
@@ -455,33 +403,6 @@
 <script>
 (function() {
   'use strict';
-
-  // ── Live demo: fallback if iframe fails to load ──
-  var iframe = document.getElementById('demo-iframe');
-  var loadingEl = document.getElementById('demo-loading');
-  var unavailableEl = document.getElementById('demo-unavailable');
-
-  // Check if the app server is reachable
-  var healthCheck = new Image();
-  healthCheck.onload = function() {
-    // App server reachable — iframe will load
-  };
-  healthCheck.onerror = function() {
-    // App server not reachable — show fallback
-    loadingEl.style.display = 'none';
-    unavailableEl.style.display = 'block';
-  };
-  // Ping the app server via the web app redirect (will return 302 or 200)
-  fetch('/app', { method: 'HEAD', mode: 'same-origin' })
-    .then(function(r) {
-      if (r.status >= 200 && r.status < 400) {
-        loadingEl.style.display = 'none';
-      }
-    })
-    .catch(function() {
-      loadingEl.style.display = 'none';
-      unavailableEl.style.display = 'block';
-    });
 
   // ── Download status: check available builds ──
   var winBtn = document.getElementById('win-dl-btn');
