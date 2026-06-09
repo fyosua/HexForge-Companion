@@ -219,12 +219,7 @@ pub fn spawn_watcher(app_handle: AppHandle, interval_ms: u64) -> Arc<AtomicBool>
                 match &current {
                     Some(TftState::Attached { x, y, width, height }) => {
                         eprintln!("[HexForge::Watcher] TFT attached — window at ({},{}) {}x{}", x, y, width, height);
-                        if let Some(overlay) = app_handle.get_webview_window("overlay") {
-                            let _ = overlay.show();
-                        }
-                        if let Some(dashboard) = app_handle.get_webview_window("dashboard") {
-                            let _ = dashboard.hide();
-                        }
+                        crate::show_overlay(&app_handle);
                         let _ = app_handle.emit("tft-attached", &payload);
                         detach_since = None;
                         puuid_clear_emitted = false;
@@ -232,13 +227,7 @@ pub fn spawn_watcher(app_handle: AppHandle, interval_ms: u64) -> Arc<AtomicBool>
                     None | Some(TftState::Detached) => {
                         if !puuid_clear_emitted {
                             eprintln!("[HexForge::Watcher] TFT detached");
-                            if let Some(overlay) = app_handle.get_webview_window("overlay") {
-                                let _ = overlay.hide();
-                            }
-                            if let Some(dashboard) = app_handle.get_webview_window("dashboard") {
-                                let _ = dashboard.show();
-                                let _ = dashboard.set_focus();
-                            }
+                            crate::show_dashboard(&app_handle);
                             let _ = app_handle.emit("tft-detached", &payload);
                             detach_since = Some(Instant::now());
                             puuid_clear_emitted = true;
