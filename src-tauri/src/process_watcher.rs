@@ -6,6 +6,7 @@ use std::sync::{
 use std::thread;
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, Manager};
+use crate::hlog;
 
 /// Whether the TFT game process/window is currently detected.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize)]
@@ -221,6 +222,7 @@ pub fn spawn_watcher(app_handle: AppHandle, interval_ms: u64) -> Arc<AtomicBool>
                         let _ = app_handle.emit("tft-attached", &payload);
                         detach_since = None;
                         puuid_clear_emitted = false;
+                        hlog!("Watcher — TFT attached at ({},{}) {}x{}", x, y, width, height);
                     }
                     None | Some(TftState::Detached) => {
                         if !puuid_clear_emitted {
@@ -229,6 +231,7 @@ pub fn spawn_watcher(app_handle: AppHandle, interval_ms: u64) -> Arc<AtomicBool>
                             let _ = app_handle.emit("tft-detached", &payload);
                             detach_since = Some(Instant::now());
                             puuid_clear_emitted = true;
+                            hlog!("Watcher — TFT detached");
                         }
                     }
                 }

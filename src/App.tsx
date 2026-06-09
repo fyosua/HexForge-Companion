@@ -29,7 +29,7 @@ interface RankInfo {
 }
 
 function isTauri(): boolean {
-  try { return !!(window as any).__TAURI__; }
+  try { return !!(window as any).__TAURI_INTERNALS__; }
   catch { return false; }
 }
 

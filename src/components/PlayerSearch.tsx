@@ -16,7 +16,7 @@ interface Props {
 /** Check if running inside Tauri WebView */
 function isTauri(): boolean {
   try {
-    return !!(window as any).__TAURI__;
+    return !!(window as any).__TAURI_INTERNALS__;
   } catch {
     return false;
   }
