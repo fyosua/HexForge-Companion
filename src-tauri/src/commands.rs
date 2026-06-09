@@ -3,6 +3,7 @@ use crate::db;
 use crate::AppState;
 use crate::hlog;
 use serde::Serialize;
+use tauri::Emitter;
 use tauri::Manager;
 use tauri::State;
 
@@ -64,6 +65,7 @@ pub struct RefreshResult {
 /// Resolve a Riot ID into player info (two-step: Riot ID → PUUID → summoner).
 #[tauri::command]
 pub async fn resolve_player(
+    app_handle: tauri::AppHandle,
     state: State<'_, AppState>,
     game_name: String,
     tag_line: String,
@@ -123,6 +125,10 @@ pub async fn resolve_player(
     };
     // Share player info across all windows (dashboard + overlay)
     *state.active_player_info.lock().map_err(|e| e.to_string())? = Some(player_info.clone());
+
+    // Emit global event so ALL windows (including overlay) update reactively
+    let _ = app_handle.emit("player-updated", &player_info);
+    hlog!("Command: resolve_player SUCCESS — emitted player-updated event");
 
     Ok(player_info)
 }

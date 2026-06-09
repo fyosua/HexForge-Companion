@@ -203,6 +203,18 @@ function App() {
     }).catch(() => {});
   }, [inTauri]);
 
+  // Reactively listen for player-updated events from Rust (all windows update)
+  useEffect(() => {
+    if (!inTauri) return;
+    let unlisten: (() => void) | undefined;
+    import("@tauri-apps/api/event").then(({ listen }) => {
+      listen<PlayerInfo>("player-updated", (event) => {
+        setPlayer(event.payload);
+      }).then((fn) => { unlisten = fn; });
+    });
+    return () => { unlisten?.(); };
+  }, [inTauri]);
+
   // ── Render helpers ────────────────────────────────────
 
   /** Dashboard TFT status banner */
