@@ -74,6 +74,7 @@ fn warn_if_production_mock(api_mode: &api::ApiMode) {
 /// Show overlay window, hide dashboard \u{2014} called on TFT attach.
 pub fn show_overlay(handle: &tauri::AppHandle) {
     if let Some(overlay) = handle.get_webview_window("overlay") {
+        let _ = overlay.set_ignore_cursor_events(true);
         let _ = overlay.show();
     }
     if let Some(dashboard) = handle.get_webview_window("dashboard") {
