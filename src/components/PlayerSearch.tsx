@@ -5,6 +5,7 @@ interface PlayerInfo {
   game_name: string;
   tag_line: string;
   summoner_level: number;
+  summoner_id: string;
 }
 
 interface Props {
@@ -34,8 +35,8 @@ async function invokePlayer(
     // Running inside Tauri — use native IPC
     const { invoke } = await import("@tauri-apps/api/core");
     return await invoke<PlayerInfo>("resolve_player", {
-      gameName,
-      tagLine: tagLine.replace(/^#/, ""),
+      game_name: gameName,
+      tag_line: tagLine.replace(/^#/, ""),
       platform,
     });
   }

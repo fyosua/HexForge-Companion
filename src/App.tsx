@@ -18,6 +18,7 @@ interface PlayerInfo {
   game_name: string;
   tag_line: string;
   summoner_level: number;
+  summoner_id: string;
 }
 
 interface RankInfo {
