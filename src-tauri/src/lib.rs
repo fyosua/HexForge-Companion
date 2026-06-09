@@ -77,6 +77,8 @@ pub fn show_overlay(handle: &tauri::AppHandle) {
     if let Some(overlay) = handle.get_webview_window("overlay") {
         let _ = overlay.set_ignore_cursor_events(true);
         let _ = overlay.show();
+        // Spawn hit-test polling so clicks outside widgets pass through
+        overlay::spawn_hit_test_loop(overlay);
     }
     if let Some(dashboard) = handle.get_webview_window("dashboard") {
         let _ = dashboard.hide();
@@ -233,6 +235,8 @@ pub fn run() {
             commands::refresh_matches,
             commands::show_overlay,
             commands::show_dashboard,
+            commands::resize_overlay,
+            commands::set_panel_size,
             commands::get_api_mode,
             commands::get_db_path,
             commands::get_active_player,

@@ -3,6 +3,7 @@ use crate::db;
 use crate::AppState;
 use crate::hlog;
 use serde::Serialize;
+use tauri::Manager;
 use tauri::State;
 
 /// Map a platform routing value to its correct regional routing.
@@ -419,6 +420,25 @@ pub fn show_overlay(app_handle: tauri::AppHandle) {
 pub fn show_dashboard(app_handle: tauri::AppHandle) {
     hlog!("Command: show_dashboard");
     crate::show_dashboard(&app_handle);
+}
+
+/// Dynamically resize the overlay window to fit content (like LoLProxChat).
+/// `height` is in physical pixels. Also updates hit-test rect.
+#[tauri::command]
+pub fn resize_overlay(app: tauri::AppHandle, height: u32) {
+    let Some(window) = app.get_webview_window("overlay") else { return };
+    let clamped = height.clamp(100, 4000);
+    let current_width = window.outer_size().ok().map(|s| s.width).unwrap_or(320);
+    let _ = window.set_size(tauri::PhysicalSize::new(current_width, clamped));
+    crate::overlay::set_panel_size(current_width, clamped);
+    hlog!("Command: resize_overlay(width={}, height={})", current_width, clamped);
+}
+
+/// Update the hit-test rect from frontend (if widget moves/resizes).
+#[tauri::command]
+pub fn set_panel_size(width: u32, height: u32) {
+    crate::overlay::set_panel_size(width, height);
+    hlog!("Command: set_panel_size(width={}, height={})", width, height);
 }
 
 /// Get the current API mode string for display in the dashboard header
