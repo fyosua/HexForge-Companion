@@ -1,3 +1,4 @@
+use crate::hlog;
 use std::sync::Mutex;
 use std::time::Duration;
 use tauri::Manager;
@@ -93,4 +94,77 @@ fn get_cursor_pos() -> Option<(i32, i32)> {
 #[cfg(not(target_os = "windows"))]
 fn get_cursor_pos() -> Option<(i32, i32)> {
     None
+}
+
+// ── Focus-aware overlay passthrough ──────────────────────
+//
+// When the user alt-tabs away from TFT, the overlay should pass
+// all clicks through so they can interact with dashboard/browser/etc.
+// When the user focuses TFT again, the overlay should capture widget
+// clicks. This polls GetForegroundWindow every 500ms.
+
+/// Spawn a thread that tracks which window has OS focus and toggles
+/// overlay passthrough accordingly. Same pattern as LoLProxChat's
+/// active-window detection.
+pub fn spawn_focus_tracker(overlay: tauri::WebviewWindow) {
+    std::thread::spawn(move || {
+        let mut last_was_game = false;
+        loop {
+            let is_game_focused = is_league_window_focused();
+            if is_game_focused != last_was_game {
+                if is_game_focused {
+                    hlog!("Focus tracker — TFT window focused, enabling overlay interaction");
+                    let _ = overlay.set_ignore_cursor_events(false);
+                } else {
+                    hlog!("Focus tracker — non-TFT window focused, enabling passthrough");
+                    let _ = overlay.set_ignore_cursor_events(true);
+                }
+                last_was_game = is_game_focused;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(500));
+        }
+    });
+}
+
+/// Check if the currently focused window is the League of Legends game.
+#[cfg(target_os = "windows")]
+fn is_league_window_focused() -> bool {
+    unsafe {
+        let hwnd = windows::Win32::UI::WindowsAndMessaging::GetForegroundWindow();
+        if hwnd.is_invalid() {
+            return false;
+        }
+        // Get window title
+        let mut buf = [0u16; 256];
+        let len = windows::Win32::UI::WindowsAndMessaging::GetWindowTextW(
+            hwnd,
+            &mut buf,
+        );
+        if len == 0 {
+            return false;
+        }
+        let title = String::from_utf16_lossy(&buf[..len as usize]);
+
+        // Check window class as well for robustness (same as LoLProxChat)
+        let mut class_buf = [0u16; 256];
+        let class_len = windows::Win32::UI::WindowsAndMessaging::GetClassNameW(
+            hwnd,
+            &mut class_buf,
+        );
+        let class_name = if class_len > 0 {
+            String::from_utf16_lossy(&class_buf[..class_len as usize])
+        } else {
+            String::new()
+        };
+
+        // Match on title or class — the game client has characteristic values
+        title.contains("League of Legends")
+            || title.contains("TFT")
+            || class_name == "RiotWindowClass"
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn is_league_window_focused() -> bool {
+    false
 }

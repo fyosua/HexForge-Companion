@@ -536,7 +536,20 @@ pub fn get_player_stats(
 pub fn get_active_player(
     state: State<'_, AppState>,
 ) -> Result<Option<PlayerInfo>, String> {
-    state.active_player_info.lock()
+    let result = state.active_player_info.lock()
         .map_err(|e| e.to_string())
-        .map(|guard| guard.clone())
+        .map(|guard| guard.clone());
+    if let Err(ref e) = result {
+        hlog!("Command get_active_player FAILED: {}", e);
+    }
+    result
+}
+
+/// ── ERROR LOGGING ────────────────────────────────────────
+
+/// Log an error from the frontend to the app log file.
+/// Called by tauriInvoke wrapper on IPC failure.
+#[tauri::command]
+pub fn log_error(cmd: String, err: String) {
+    hlog!("FRONTEND IPC ERROR in '{}': {}", cmd, err);
 }

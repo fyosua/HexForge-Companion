@@ -38,7 +38,14 @@ const PROXY_URL = window.location.origin;
 async function tauriInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
   if (isTauri()) {
     const { invoke } = await import("@tauri-apps/api/core");
-    return await invoke<T>(cmd, args);
+    try {
+      return await invoke<T>(cmd, args);
+    } catch (err) {
+      console.error(`[HexForge] IPC error in ${cmd}:`, err);
+      // Log to backend file via a dedicated log command
+      try { await invoke("log_error", { cmd, err: String(err) }); } catch {}
+      throw err;
+    }
   }
   const res = await fetch(`${PROXY_URL}/api/${cmd.replace(/_/g, "-")}`, {
     method: "POST",

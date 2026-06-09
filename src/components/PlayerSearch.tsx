@@ -35,8 +35,8 @@ async function invokePlayer(
     // Running inside Tauri — use native IPC
     const { invoke } = await import("@tauri-apps/api/core");
     return await invoke<PlayerInfo>("resolve_player", {
-      game_name: gameName,
-      tag_line: tagLine.replace(/^#/, ""),
+      gameName,
+      tagLine: tagLine.replace(/^#/, ""),
       platform,
     });
   }
