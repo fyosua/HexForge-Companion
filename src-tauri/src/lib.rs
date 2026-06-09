@@ -198,18 +198,6 @@ pub fn run() {
             })
             .build()
         )
-        .on_window_event(|window, event| {
-            // When dashboard loses focus, enable overlay passthrough
-            // so the game or other apps aren't blocked
-            if let tauri::WindowEvent::Focused(false) = event {
-                if window.label() == "dashboard" {
-                    hlog!("Dashboard lost focus — enabling overlay passthrough");
-                    if let Some(overlay) = window.app_handle().get_webview_window("overlay") {
-                        let _ = overlay.set_ignore_cursor_events(true);
-                    }
-                }
-            }
-        })
         .setup(move |app| {
             // Show dashboard on startup (overlay starts hidden)
             show_dashboard(app.handle());
@@ -255,8 +243,6 @@ pub fn run() {
             commands::get_db_path,
             commands::get_active_player,
             commands::log_error,
-            commands::hud_bounds_enter,
-            commands::hud_bounds_leave,
             commands::request_account_deletion,
         ])
         .run(tauri::generate_context!())

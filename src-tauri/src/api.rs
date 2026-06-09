@@ -182,18 +182,20 @@ static MOCK_DIR: OnceLock<PathBuf> = OnceLock::new();
 
 fn mock_path() -> &'static PathBuf {
     MOCK_DIR.get_or_init(|| {
-        let exe_dir = std::env::current_exe()
-            .ok()
-            .and_then(|p| p.parent().map(|p| p.to_path_buf()))
-            .unwrap_or_default();
+        // Only check paths relative to project structure (dev builds).
+        // For distributed .exe, embedded fallback via include_str!() is used.
         let candidates = [
-            exe_dir.join("mock"),
-            exe_dir.join("../../../src-tauri/mock"),
-            exe_dir.join("../../../../src-tauri/mock"),
             PathBuf::from("src-tauri/mock"),
             PathBuf::from("../src-tauri/mock"),
         ];
-        candidates.clone().into_iter().find(|p| p.exists()).unwrap_or_else(|| candidates[0].clone())
+        // Also try relative to the Cargo workspace (debug builds)
+        if let Some(manifest_dir) = std::env::var_os("CARGO_MANIFEST_DIR") {
+            let cargo_mock = PathBuf::from(&manifest_dir).join("mock");
+            if cargo_mock.exists() {
+                return cargo_mock;
+            }
+        }
+        candidates.iter().find(|p| p.exists()).cloned().unwrap_or_else(|| candidates[0].clone())
     })
 }
 

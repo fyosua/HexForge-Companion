@@ -106,31 +106,8 @@ function App() {
 
   useEffect(() => {
     setInTauri(isTauri());
-    if (!isTauri()) return;
-
-    let invoke: (cmd: string) => void;
-    import("@tauri-apps/api/core").then((mod) => {
-      invoke = mod.invoke;
-    }).catch(() => {});
-
-    const onMouseOver = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.closest(".hex-hud-interactive")) {
-        invoke?.("hud_bounds_enter");
-      }
-    };
-    const onMouseOut = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.closest(".hex-hud-interactive")) {
-        invoke?.("hud_bounds_leave");
-      }
-    };
-    document.addEventListener("mouseover", onMouseOver);
-    document.addEventListener("mouseout", onMouseOut);
-    return () => {
-      document.removeEventListener("mouseover", onMouseOver);
-      document.removeEventListener("mouseout", onMouseOut);
-    };
+    // Note: overlay click-through is handled by Rust hit-test loop
+    // (overlay.rs spawn_hit_test_loop) — no JS listeners needed
   }, []);
 
   // Poll rank + game status for pin widget
