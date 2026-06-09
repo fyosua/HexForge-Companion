@@ -36,8 +36,6 @@ fn is_tft_process_running() -> bool {
     const MAX_PATH: usize = 260;
     const TFT_PROCESS_NAMES: &[&str] = &[
         "League of Legends.exe",
-        "LeagueClient.exe",
-        "RiotClientServices.exe",
     ];
 
     unsafe {

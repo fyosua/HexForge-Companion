@@ -4,9 +4,10 @@ use std::sync::{Arc, Mutex};
 use tauri::Manager;
 
 mod api;
-mod db;
-mod overlay;
 mod commands;
+mod db;
+mod logger;
+mod overlay;
 mod process_watcher;
 
 pub struct AppState {
@@ -167,6 +168,13 @@ pub fn run() {
     // Print startup banner
     print_startup_banner(&api_mode, &db_path);
     warn_if_production_mock(&api_mode);
+
+    // Initialize file logger
+    let app_data_dir = dirs_data_local()
+        .unwrap_or_else(|| std::path::PathBuf::from("."))
+        .join("HexForge");
+    logger::init_logger(&app_data_dir);
+    hlog!("Startup — version {}, PID {}, mode {:?}", env!("CARGO_PKG_VERSION"), std::process::id(), api_mode);
 
     // Shared flag for the process watcher thread
     let watcher_flag = Arc::new(AtomicBool::new(true));

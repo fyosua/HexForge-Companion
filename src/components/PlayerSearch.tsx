@@ -47,9 +47,10 @@ async function invokePlayer(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ gameName, tagLine: tagLine.replace(/^#/, ""), platform }),
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(err.error || `HTTP ${res.status}`);
+  const contentType = res.headers.get("content-type") || "";
+  if (!res.ok || contentType.includes("text/html")) {
+    const text = await res.text();
+    throw new Error(text.startsWith("<") ? `Server error (status ${res.status})` : text);
   }
   return res.json();
 }

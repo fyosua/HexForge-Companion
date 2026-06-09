@@ -45,6 +45,12 @@ async function tauriInvoke<T>(cmd: string, args?: Record<string, unknown>): Prom
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(args || {}),
   });
+  // Check for HTML response (proxy error page) before JSON parse
+  const contentType = res.headers.get("content-type") || "";
+  if (!res.ok || contentType.includes("text/html")) {
+    const text = await res.text();
+    throw new Error(text.startsWith("<") ? `Server returned HTML (status ${res.status})` : text);
+  }
   return res.json();
 }
 
