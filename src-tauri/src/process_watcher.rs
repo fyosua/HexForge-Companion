@@ -25,106 +25,13 @@ pub struct ClearPuuidPayload {
     pub reason: &'static str,
 }
 
-// ── Windows process detection ─────────────────────────────
-
-#[cfg(target_os = "windows")]
+/// Check if a TFT/League process is running on this platform.
+/// Returns `true` if any matching process is found.
 fn is_tft_process_running() -> bool {
-    use windows::Win32::System::Diagnostics::ToolHelp::{
-        CreateToolhelp32Snapshot, Process32FirstW, Process32NextW,
-        TH32CS_SNAPPROCESS, PROCESSENTRY32W,
-    };
-
-    const MAX_PATH: usize = 260;
-    const TFT_PROCESS_NAMES: &[&str] = &[
-        "League of Legends.exe",
-    ];
-
-    unsafe {
-        let snapshot = match CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) {
-            Ok(h) => h,
-            Err(_) => return false,
-        };
-
-        let mut entry = PROCESSENTRY32W {
-            dwSize: std::mem::size_of::<PROCESSENTRY32W>() as u32,
-            cntUsage: 0,
-            th32ProcessID: 0,
-            th32DefaultHeapID: 0,
-            th32ModuleID: 0,
-            cntThreads: 0,
-            th32ParentProcessID: 0,
-            pcPriClassBase: 0,
-            dwFlags: 0,
-            szExeFile: [0u16; MAX_PATH],
-        };
-
-        if Process32FirstW(snapshot, &mut entry).is_err() {
-            let _ = windows::Win32::Foundation::CloseHandle(snapshot);
-            return false;
-        }
-
-        loop {
-            let len = entry.szExeFile.iter()
-                .position(|&c| c == 0)
-                .unwrap_or(MAX_PATH);
-            let exe_name = String::from_utf16_lossy(&entry.szExeFile[..len]);
-
-            for name in TFT_PROCESS_NAMES {
-                if exe_name.eq_ignore_ascii_case(name) {
-                    let _ = windows::Win32::Foundation::CloseHandle(snapshot);
-                    return true;
-                }
-            }
-
-            if Process32NextW(snapshot, &mut entry).is_err() {
-                break;
-            }
-        }
-
-        let _ = windows::Win32::Foundation::CloseHandle(snapshot);
-        false
-    }
-}
-
-// ── Non-Windows fallback ─────────────────────────────────
-
-#[cfg(not(target_os = "windows"))]
-fn is_tft_process_running() -> bool {
-    if let Ok(entries) = std::fs::read_dir("/proc") {
-        for entry in entries.flatten() {
-            let pid_str = entry.file_name().to_string_lossy().to_string();
-            if !pid_str.chars().all(|c| c.is_ascii_digit()) {
-                continue;
-            }
-            let comm_path = entry.path().join("comm");
-            if let Ok(comm) = std::fs::read_to_string(&comm_path) {
-                let comm = comm.trim();
-                for name in &["league", "lol", "riot", "tft"] {
-                    if comm.to_ascii_lowercase().contains(name) {
-                        return true;
-                    }
-                }
-            }
-            let cmdline_path = entry.path().join("cmdline");
-            if let Ok(cmdline) = std::fs::read_to_string(&cmdline_path) {
-                let cmdline = cmdline.replace('\0', " ");
-                for name in &["LeagueClient.exe", "League of Legends.exe"] {
-                    if cmdline.contains(name) {
-                        return true;
-                    }
-                }
-            }
-        }
-    }
-    // Dev fallback on Linux with display
-    if std::env::var("DISPLAY")
-        .ok()
-        .filter(|d| !d.is_empty())
-        .is_some()
-    {
-        return true;
-    }
-    false
+    use std::ffi::OsStr;
+    use sysinfo::System;
+    let system = System::new_all();
+    system.processes_by_name(OsStr::new("League of Legends.exe")).count() > 0
 }
 
 // ── Windows window geometry ──────────────────────────────
