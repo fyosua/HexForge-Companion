@@ -202,25 +202,27 @@ pub fn spawn_watcher(app_handle: AppHandle, interval_ms: u64) -> Arc<AtomicBool>
         let mut last_process_running: Option<bool> = None;
         let mut detach_since: Option<Instant> = None;
         let mut puuid_clear_emitted = false;
+        let mut poll_count: u64 = 0;
 
         eprintln!("[HexForge::Watcher] Started — polling every {}ms", interval_ms);
         hlog!("Watcher started — polling every {}ms", interval_ms);
 
         while running_clone.load(Ordering::Relaxed) {
+            poll_count += 1;
             let process_running = is_tft_process_running();
             let geometry = if process_running { get_tft_geometry() } else { None };
 
-            // Toggle windows only when PROCESS state changes (not geometry)
+            // Log every 10th poll + every state change (verbose for debugging)
+            if poll_count % 10 == 0 || last_process_running != Some(process_running) {
+                hlog!("Watcher poll#{} — process_running={}, geometry={:?}", poll_count, process_running,
+                    geometry.map(|(x,y,w,h)| format!("({},{}){}x{}",x,y,w,h)));
+            }
+
+            // 🚫 NO window toggling from watcher — emit events only
+            // Frontend uses these events to update UI and user clicks "Launch Overlay"
             if last_process_running != Some(process_running) {
                 if process_running {
-                    eprintln!("[HexForge::Watcher] TFT process detected");
-                    hlog!("Watcher — TFT process detected");
-                    crate::show_overlay(&app_handle);
-                    if let Some((x, y, w, h)) = geometry {
-                        hlog!("Watcher — geometry: ({},{}) {}x{}", x, y, w, h);
-                    } else {
-                        hlog!("Watcher — no window geometry (using overlay defaults)");
-                    }
+                    hlog!("Watcher — process DETECTED (emitting tft-attached)");
                     let payload = TftStatePayload {
                         state: TftState::Attached {
                             x: geometry.map(|g| g.0).unwrap_or(0),
@@ -233,9 +235,7 @@ pub fn spawn_watcher(app_handle: AppHandle, interval_ms: u64) -> Arc<AtomicBool>
                     detach_since = None;
                     puuid_clear_emitted = false;
                 } else {
-                    eprintln!("[HexForge::Watcher] TFT process lost");
-                    hlog!("Watcher — TFT process lost, switching to dashboard");
-                    crate::show_dashboard(&app_handle);
+                    hlog!("Watcher — process LOST (emitting tft-detached)");
                     let payload = TftStatePayload { state: TftState::Detached };
                     let _ = app_handle.emit("tft-detached", &payload);
                     detach_since = Some(Instant::now());
@@ -258,7 +258,7 @@ pub fn spawn_watcher(app_handle: AppHandle, interval_ms: u64) -> Arc<AtomicBool>
         }
 
         eprintln!("[HexForge::Watcher] Stopped");
-        hlog!("Watcher stopped");
+        hlog!("Watcher stopped — {} total polls", poll_count);
     });
 
     running
