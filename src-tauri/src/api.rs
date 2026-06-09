@@ -199,9 +199,23 @@ fn mock_path() -> &'static PathBuf {
 
 fn read_mock_json<T: serde::de::DeserializeOwned>(filename: &str) -> Result<T, Box<dyn std::error::Error>> {
     let path = mock_path().join(filename);
-    let content = std::fs::read_to_string(&path)
-        .map_err(|e| format!("Mock file '{}' not found: {}", path.display(), e))?;
-    Ok(serde_json::from_str(&content)?)
+
+    // Try file system first (for dev / local builds)
+    if let Ok(content) = std::fs::read_to_string(&path) {
+        return Ok(serde_json::from_str(&content)?);
+    }
+
+    // Fallback: embedded mock data (for distributed .exe without mock dir)
+    let embedded = match filename {
+        "account.json" => Some(include_str!("../mock/account.json")),
+        "summoner.json" => Some(include_str!("../mock/summoner.json")),
+        _ => None,
+    };
+
+    match embedded {
+        Some(json) => Ok(serde_json::from_str(json)?),
+        None => Err(format!("Mock file '{}' not found at '{}' and no embedded fallback", filename, path.display()).into()),
+    }
 }
 
 /// Helper: build platform-specific base URL for Direct mode (tft prefix).

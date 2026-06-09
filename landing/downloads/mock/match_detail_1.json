@@ -1,0 +1,137 @@
+{
+  "metadata": {
+    "data_version": "2",
+    "match_id": "KR_...n",
+    "participants": [
+      "S7vF9kG2hJ5mN8qR3tW1xZ4cB6yA0dE8fL7pO2iU9sK4jH5gF3vB1nM6xC0zR",
+      "aB3cD5eF7gH9iJ1kL4mN6oP8qR0sT2uV",
+      "wX5yZ7aB2cD4eF6gH8iJ0kL1mN3oP5qR",
+      "rT9uV1wX3yZ5aB7cD9eF0gH2iJ4kL6mN",
+      "oP1qR3sT5uV7wX9yZ0aB2cD4eF6gH8iJ",
+      "kL0mN2oP4qR6sT8uV0wX2yZ4aB6cD8eF",
+      "gH6iJ8kL0mN2oP4qR6sT8uV0wX2yZ4aB",
+      "cD4eF6gH8iJ0kL2mN4oP6qR8sT0uV2wX"
+    ]
+  },
+  "info": {
+    "game_datetime": 1717858800000,
+    "game_length": 2132.5,
+    "game_version": "Version 14.11.5637648",
+    "queue_id": 1100,
+    "tft_set_number": 13,
+    "tft_set_canonical": "TFT13",
+    "end_of_game_result": "EOF",
+    "map_id": 22,
+    "participants": [
+      {
+        "puuid": "S7vF9kG2hJ5mN8qR3tW1xZ4cB6yA0dE8fL7pO2iU9sK4jH5gF3vB1nM6xC0zR",
+        "placement": 1,
+        "gold_left": 62,
+        "last_round": 37,
+        "level": 9,
+        "players_eliminated": 7,
+        "time_eliminated": 0,
+        "total_damage_to_players": 142,
+        "companion": {
+          "content_ID": "5a3b2c1d-4e8f-9a0b-1c2d-3e4f5a6b7c8d",
+          "skin_ID": 0,
+          "species": "Furyhorn",
+          "rarity": 2
+        },
+        "traits": [
+          {
+            "name": "Set13_Trait_Arcana",
+            "num_units": 3,
+            "style": 2,
+            "tier_current": 2,
+            "tier_total": 3
+          },
+          {
+            "name": "Set13_Trait_Sorcerer",
+            "num_units": 4,
+            "style": 2,
+            "tier_current": 2,
+            "tier_total": 3
+          },
+          {
+            "name": "Set13_Trait_Strategist",
+            "num_units": 2,
+            "style": 1,
+            "tier_current": 1,
+            "tier_total": 2
+          }
+        ],
+        "units": [
+          {
+            "character_id": "TFT13_Ahri",
+            "name": "Ahri",
+            "rarity": 4,
+            "tier": 2,
+            "items": [1001, 3086, 3134]
+          },
+          {
+            "character_id": "TFT13_Swain",
+            "name": "Swain",
+            "rarity": 3,
+            "tier": 3,
+            "items": [3157, 3111]
+          },
+          {
+            "character_id": "TFT13_Vex",
+            "name": "Vex",
+            "rarity": 3,
+            "tier": 2,
+            "items": [3134, 1058]
+          },
+          {
+            "character_id": "TFT13_Heimerdinger",
+            "name": "Heimerdinger",
+            "rarity": 5,
+            "tier": 1,
+            "items": [3086]
+          },
+          {
+            "character_id": "TFT13_Garen",
+            "name": "Garen",
+            "rarity": 2,
+            "tier": 2,
+            "items": []
+          },
+          {
+            "character_id": "TFT13_Taric",
+            "name": "Taric",
+            "rarity": 1,
+            "tier": 3,
+            "items": [3190]
+          }
+        ],
+        "augments": [
+          "TFT13_Augment_SorcererCrown",
+          "TFT13_Augment_PandorasBench",
+          "TFT13_Augment_LevelUp"
+        ]
+      },
+      {
+        "puuid": "aB3cD5eF7gH9iJ1kL4mN6oP8qR0sT2uV",
+        "placement": 2,
+        "gold_left": 34,
+        "last_round": 37,
+        "level": 8,
+        "players_eliminated": 4,
+        "time_eliminated": 0,
+        "total_damage_to_players": 118,
+        "companion": {"content_ID": "", "skin_ID": 0, "species": "Choncc", "rarity": 1},
+        "traits": [
+          {"name": "Set13_Trait_Bruiser", "num_units": 4, "style": 2, "tier_current": 2, "tier_total": 3},
+          {"name": "Set13_Trait_Watcher", "num_units": 3, "style": 1, "tier_current": 1, "tier_total": 2}
+        ],
+        "units": [
+          {"character_id": "TFT13_Mundo", "name": "Dr. Mundo", "rarity": 4, "tier": 2, "items": [3086, 3078]},
+          {"character_id": "TFT13_Vi", "name": "Vi", "rarity": 3, "tier": 3, "items": [3157]},
+          {"character_id": "TFT13_Sejuani", "name": "Sejuani", "rarity": 3, "tier": 2, "items": [3190]}
+        ],
+        "augments": ["TFT13_Augment_BruiserHeart", "TFT13_Augment_CombatTraining"]
+      }
+    ]
+  }
+}

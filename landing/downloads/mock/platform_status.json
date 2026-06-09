@@ -1,0 +1,10 @@
+{
+  "id": "kr",
+  "name": "Korea",
+  "locales": [
+    "ko_KR",
+    "en_US"
+  ],
+  "maintenances": [],
+  "incidents": []
+}
