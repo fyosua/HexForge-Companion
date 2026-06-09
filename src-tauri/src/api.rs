@@ -205,16 +205,29 @@ fn read_mock_json<T: serde::de::DeserializeOwned>(filename: &str) -> Result<T, B
         return Ok(serde_json::from_str(&content)?);
     }
 
-    // Fallback: embedded mock data (for distributed .exe without mock dir)
+    // Fallback: all mock files embedded at compile time via include_str!
     let embedded = match filename {
         "account.json" => Some(include_str!("../mock/account.json")),
         "summoner.json" => Some(include_str!("../mock/summoner.json")),
+        "active_shard.json" => Some(include_str!("../mock/active_shard.json")),
+        "region.json" => Some(include_str!("../mock/region.json")),
+        "match_ids.json" => Some(include_str!("../mock/match_ids.json")),
+        "match_detail_1.json" => Some(include_str!("../mock/match_detail_1.json")),
+        "match_detail_2.json" => Some(include_str!("../mock/match_detail_2.json")),
+        "league_entries.json" => Some(include_str!("../mock/league_entries.json")),
+        "challenger_league.json" => Some(include_str!("../mock/challenger_league.json")),
+        "grandmaster_league.json" => Some(include_str!("../mock/grandmaster_league.json")),
+        "master_league.json" => Some(include_str!("../mock/master_league.json")),
+        "league_entries_tier.json" => Some(include_str!("../mock/league_entries_tier.json")),
+        "rated_ladder_top.json" => Some(include_str!("../mock/rated_ladder_top.json")),
+        "active_game.json" => Some(include_str!("../mock/active_game.json")),
+        "platform_status.json" => Some(include_str!("../mock/platform_status.json")),
         _ => None,
     };
 
     match embedded {
         Some(json) => Ok(serde_json::from_str(json)?),
-        None => Err(format!("Mock file '{}' not found at '{}' and no embedded fallback", filename, path.display()).into()),
+        None => Err(format!("Mock file '{}' not found on disk and no embedded fallback", filename).into()),
     }
 }
 

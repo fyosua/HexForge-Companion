@@ -14,7 +14,17 @@ body {
   background: transparent;
   color: #f0f0f0;
   font-family: 'Segoe UI', system-ui, sans-serif;
-  pointer-events: none; /* everything passthrough by default */
+  /* pointer-events managed by overlay vs dashboard CSS below */
+}
+
+/* Dashboard view — full interactivity */
+.app-container.dashboard-view {
+  pointer-events: auto;
+}
+
+/* Overlay view — passthrough by default, interactive elements opt in */
+.app-container.overlay-view {
+  pointer-events: none;
 }
 
 /* ── Interactive override ─────────────────────────────── */
