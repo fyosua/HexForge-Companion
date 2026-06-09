@@ -1,6 +1,7 @@
 use crate::api::RiotApiClient;
 use crate::db;
 use crate::AppState;
+use crate::hlog;
 use serde::Serialize;
 use tauri::State;
 
@@ -67,6 +68,7 @@ pub async fn resolve_player(
     tag_line: String,
     platform: String,
 ) -> Result<PlayerInfo, String> {
+    hlog!("Command: resolve_player(game_name={}, tag_line={}, platform={})", game_name, tag_line, platform);
     let (api_mode, platform, region) = {
         let platform = if platform.is_empty() {
             std::env::var("RIOT_PLATFORM").unwrap_or_else(|_| "kr".into())
@@ -408,12 +410,14 @@ pub async fn get_active_game_status(
 /// Show overlay, hide dashboard — called from frontend "Launch Overlay" button
 #[tauri::command]
 pub fn show_overlay(app_handle: tauri::AppHandle) {
+    hlog!("Command: show_overlay");
     crate::show_overlay(&app_handle);
 }
 
 /// Show dashboard, hide overlay — called from overlay "Back to Dashboard" button
 #[tauri::command]
 pub fn show_dashboard(app_handle: tauri::AppHandle) {
+    hlog!("Command: show_dashboard");
     crate::show_dashboard(&app_handle);
 }
 
